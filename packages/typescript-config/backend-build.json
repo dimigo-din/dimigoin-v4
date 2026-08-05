@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./backend.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowImportingTsExtensions": false
+  },
+  "exclude": ["../../apps/backend/node_modules", "../../apps/backend/dist", "../../apps/backend/**/*spec.ts"]
+}

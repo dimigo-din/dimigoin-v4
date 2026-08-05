@@ -1,0 +1,17 @@
+{
+  "name": "@dimigoin-v4/typescript-config",
+  "version": "0.0.0",
+  "description": "Shared TypeScript configuration for dimigoin-v4",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": "./base.json",
+    "./backend": "./backend.json",
+    "./backend-build": "./backend-build.json",
+    "./backend-test": "./backend-test.json",
+    "./backoffice": "./backoffice.json",
+    "./backoffice-app": "./backoffice-app.json",
+    "./backoffice-node": "./backoffice-node.json"
+  }
+}

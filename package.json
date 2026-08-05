@@ -1,0 +1,49 @@
+{
+  "name": "dimigoin-v4",
+  "version": "4.1.0",
+  "description": "A school dormitory intranet service for students and teachers at KDMHS",
+  "author": "lanzarote0tr <me@trillion-won.com>",
+  "license": "UNLICENSED",
+  "private": true,
+  "packageManager": "npm@11.17.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names backend,backoffice \"npm --workspace @dimigoin-v4/backend run dev\" \"npm --workspace @dimigoin-v4/backoffice run dev\"",
+    "dev:backend": "npm --workspace @dimigoin-v4/backend run dev",
+    "dev:back": "npm --workspace @dimigoin-v4/backend run dev",
+    "dev:backoffice": "npm --workspace @dimigoin-v4/backoffice run dev",
+    "build": "npm --workspace @dimigoin-v4/backend run build && npm --workspace @dimigoin-v4/backoffice run build",
+    "build:backend": "npm --workspace @dimigoin-v4/backend run build",
+    "build:back": "npm --workspace @dimigoin-v4/backend run build",
+    "build:backoffice": "npm --workspace @dimigoin-v4/backoffice run build",
+    "typecheck": "npm --workspace @dimigoin-v4/backend run typecheck && npm --workspace @dimigoin-v4/backoffice run typecheck",
+    "check": "biome check apps",
+    "check:backend": "biome check apps/backend",
+    "check:backoffice": "biome check apps/backoffice",
+    "check:write": "biome check --write apps",
+    "check:write:backend": "biome check --write apps/backend",
+    "check:write:backoffice": "biome check --write apps/backoffice",
+    "lint": "biome lint apps",
+    "lint:backend": "biome lint apps/backend",
+    "lint:backoffice": "biome lint apps/backoffice",
+    "format": "biome format --write apps",
+    "format:backend": "biome format --write apps/backend",
+    "format:backoffice": "biome format --write apps/backoffice",
+    "clean": "npm --workspace @dimigoin-v4/backend run clean && npm --workspace @dimigoin-v4/backoffice run clean"
+  },
+  "devDependencies": {
+    "@dimigoin-v4/biome-config": "0.0.0",
+    "@biomejs/biome": "^2.4.15",
+    "concurrently": "^9.2.1",
+    "typescript": "~6.0.2"
+  },
+  "optionalDependencies": {
+    "@swc/core-linux-arm64-musl": "1.15.21",
+    "@swc/core-linux-x64-musl": "1.15.21",
+    "lightningcss-linux-arm64-musl": "1.33.0",
+    "lightningcss-linux-x64-musl": "1.33.0"
+  }
+}

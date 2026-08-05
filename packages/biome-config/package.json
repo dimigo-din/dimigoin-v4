@@ -1,0 +1,14 @@
+{
+  "name": "@dimigoin-v4/biome-config",
+  "version": "0.0.0",
+  "description": "Shared Biome configuration for dimigoin-v4",
+  "author": "lanzarote0tr <me@trillion-won.com>",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": "./base.json",
+    "./backend": "./backend.json",
+    "./backoffice": "./backoffice.json"
+  }
+}
