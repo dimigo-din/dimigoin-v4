@@ -1,0 +1,174 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  HttpStatus,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UseInterceptors,
+} from "@nestjs/common";
+import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import type { FastifyReply } from "fastify";
+import type { User } from "#/db/schema";
+import { CustomJwtAuthGuard } from "#auth/guards";
+import { PermissionGuard } from "#auth/guards/permission.guard";
+import { UseGuardsWithSwagger } from "#auth/guards/useGuards";
+import { CurrentUser } from "$decorators/user.decorator";
+import { ApiResponseFormat } from "$dto/response_format.dto";
+import { PermissionEnum } from "$mapper/permissions";
+import {
+  ChangeFacilityReportStatusDTO,
+  ChangeFacilityReportTypeDTO,
+  FacilityImgIdDTO,
+  FacilityReportCommentIdDTO,
+  FacilityReportIdDTO,
+  FacilityReportListResDTO,
+  GetReportListDTO,
+  PostCommentDTO,
+  ReportFacilityDTO,
+} from "~facility/dto/facility.manage.dto";
+import { ImageUploadInterceptor } from "~facility/interceptor/image-upload.interceptor";
+import { FacilityManageService } from "~facility/providers";
+
+@ApiTags("Facility Manage")
+@Controller("/manage/facility")
+@UseGuardsWithSwagger(CustomJwtAuthGuard, PermissionGuard([PermissionEnum.TEACHER]))
+export class FacilityManageController {
+  constructor(private readonly facilityManageService: FacilityManageService) {}
+
+  @ApiOperation({
+    summary: "사진 불러오기",
+    description: "시설제보에 업로드된 사진으로 리다이렉트합니다.",
+  })
+  @ApiResponse({
+    status: HttpStatus.FOUND,
+  })
+  @Get("/img")
+  async getImg(@Res() res: FastifyReply, @Query() data: FacilityImgIdDTO) {
+    try {
+      const result = await this.facilityManageService.getImg(data);
+      return res.redirect(result.url, HttpStatus.FOUND);
+    } catch (err) {
+      const status =
+        err instanceof HttpException ? err.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+      const error = err instanceof HttpException ? err.getResponse() : "Internal Server Error";
+      return res.status(status).send({ ok: false, status, error });
+    }
+  }
+
+  @ApiOperation({
+    summary: "사진 삭제하기",
+    description: "첨부된 사진을 삭제합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Delete("/img")
+  async deleteImg(@Query() data: FacilityImgIdDTO) {
+    return await this.facilityManageService.deleteImg(data);
+  }
+
+  @ApiOperation({
+    summary: "제보 목록 불러오기",
+    description: "제보 목록을 불러옵니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+    type: [FacilityReportListResDTO],
+  })
+  @Get("/list")
+  async getReportList(@Query() data: GetReportListDTO) {
+    return await this.facilityManageService.reportList(data);
+  }
+
+  @ApiOperation({
+    summary: "제보 불러오기",
+    description: "제보를 1건 불러옵니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Get("/")
+  async getReport(@Query() data: FacilityReportIdDTO) {
+    return await this.facilityManageService.getReport(data);
+  }
+
+  @ApiOperation({
+    summary: "시설 제보",
+    description: "고장나거나 개선사항이 필요한 시설을 제보합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({ type: ReportFacilityDTO })
+  @Post("/")
+  @UseInterceptors(ImageUploadInterceptor)
+  async report(@CurrentUser() user: User, @Body() data: ReportFacilityDTO) {
+    return await this.facilityManageService.createReport(user, data, data.file || []);
+  }
+
+  @ApiOperation({
+    summary: "시설 제보 삭제",
+    description: "시설 제보를 삭제합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Delete("/")
+  async deleteReport(@Query() data: FacilityReportIdDTO) {
+    return await this.facilityManageService.deleteReport(data);
+  }
+
+  @ApiOperation({
+    summary: "댓글 작성",
+    description: "시설 제보에 댓글을 작성합니다",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Post("/comment")
+  async writeComment(@CurrentUser() user: User, @Body() data: PostCommentDTO) {
+    return await this.facilityManageService.writeComment(user, data);
+  }
+
+  @ApiOperation({
+    summary: "댓글 삭제",
+    description: "시설 제보에 작성된 댓글을 삭제합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Delete("/comment")
+  async deleteComment(@Query() data: FacilityReportCommentIdDTO) {
+    return await this.facilityManageService.deleteComment(data);
+  }
+
+  @ApiOperation({
+    summary: "시설 제보 성격 변경",
+    description: "시설 제보의 성격을 변경합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Patch("/type")
+  async changeType(data: ChangeFacilityReportTypeDTO) {
+    return await this.facilityManageService.changeType(data);
+  }
+
+  @ApiOperation({
+    summary: "시설 제보 처리 진행상황 변경",
+    description: "접수된 시설 제보의 처리 진행상황을 변경합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Patch("/status")
+  async changeStatus(@Body() data: ChangeFacilityReportStatusDTO) {
+    return await this.facilityManageService.changeStatus(data);
+  }
+}

@@ -1,0 +1,107 @@
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post,
+  Query,
+  Res,
+  UseInterceptors,
+} from "@nestjs/common";
+import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import type { FastifyReply } from "fastify";
+import type { User } from "#/db/schema";
+import { CustomJwtAuthGuard } from "#auth/guards";
+import { UseGuardsWithSwagger } from "#auth/guards/useGuards";
+import { CurrentUser } from "$decorators/user.decorator";
+import { ApiResponseFormat } from "$dto/response_format.dto";
+import {
+  FacilityImgIdDTO,
+  FacilityReportIdDTO,
+  FacilityReportListResDTO,
+  GetReportListDTO,
+  PostCommentDTO,
+  ReportFacilityDTO,
+} from "~facility/dto/facility.student.dto";
+import { ImageUploadInterceptor } from "~facility/interceptor/image-upload.interceptor";
+import { FacilityStudentService } from "~facility/providers";
+
+@ApiTags("Facility Student")
+@Controller("/student/facility")
+@UseGuardsWithSwagger(CustomJwtAuthGuard)
+export class FacilityStudentController {
+  constructor(private readonly facilityService: FacilityStudentService) {}
+
+  @ApiOperation({
+    summary: "이미지 불러오기",
+    description: "업로드된 이미지로 리다이렉트합니다.",
+  })
+  @ApiResponse({
+    status: HttpStatus.FOUND,
+  })
+  @Get("/img")
+  async getImg(@Res() res: FastifyReply, @Query() data: FacilityImgIdDTO) {
+    try {
+      const result = await this.facilityService.getImg(data);
+      return res.redirect(result.url, HttpStatus.FOUND);
+    } catch (err) {
+      const status =
+        err instanceof HttpException ? err.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+      const error = err instanceof HttpException ? err.getResponse() : "Internal Server Error";
+      return res.status(status).send({ ok: false, status, error });
+    }
+  }
+
+  @ApiOperation({
+    summary: "시설 제보 목록",
+    description: "시설 제보 목록을 불러옵니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+    type: [FacilityReportListResDTO],
+  })
+  @Get("/list")
+  async getReportList(@Query() data: GetReportListDTO) {
+    return await this.facilityService.reportList(data);
+  }
+
+  @ApiOperation({
+    summary: "시설 제보 불러오기",
+    description: "특정 시설 제보를 불러옵니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Get("/")
+  async getReport(@Query() data: FacilityReportIdDTO) {
+    return await this.facilityService.getReport(data);
+  }
+
+  @ApiOperation({
+    summary: "시설 제보",
+    description: "고장나거나 개선사항이 필요한 시설을 제보합니다. 삭제가 불가능합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({ type: ReportFacilityDTO })
+  @Post("/")
+  @UseInterceptors(ImageUploadInterceptor)
+  async report(@CurrentUser() user: User, @Body() data: ReportFacilityDTO) {
+    return await this.facilityService.createReport(user, data, data.file || []);
+  }
+
+  @ApiOperation({
+    summary: "댓글 작성",
+    description: "시설 제보문에 댓글을 추가합니다. 삭제가 불가능합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Post("/comment")
+  async postComment(@CurrentUser() user: User, @Body() data: PostCommentDTO) {
+    return await this.facilityService.writeComment(user, data);
+  }
+}

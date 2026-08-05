@@ -1,0 +1,52 @@
+import { Body, Controller, Delete, Get, HttpStatus, Post } from "@nestjs/common";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import type { User } from "#/db/schema";
+import { CustomJwtAuthGuard } from "#auth/guards";
+import { UseGuardsWithSwagger } from "#auth/guards/useGuards";
+import { CurrentUser } from "$decorators/user.decorator";
+import { ApiResponseFormat } from "$dto/response_format.dto";
+import { ClientFrigoApplyDTO } from "~frigo/dto/frigo.dto";
+import { FrigoStudentService } from "~frigo/providers";
+
+@ApiTags("Frigo Student")
+@Controller("/student/frigo")
+@UseGuardsWithSwagger(CustomJwtAuthGuard)
+export class FrigoStudentController {
+  constructor(private readonly frigoService: FrigoStudentService) {}
+
+  @ApiOperation({
+    summary: "신청정보 확인",
+    description: "금요귀가 신청 정보를 확인합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Get("/")
+  async getApply(@CurrentUser() user: User) {
+    return await this.frigoService.getApply(user);
+  }
+
+  @ApiOperation({
+    summary: "금요귀가 신청",
+    description: "금요귀가를 신청합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Post("/")
+  async apply(@CurrentUser() user: User, @Body() data: ClientFrigoApplyDTO) {
+    return await this.frigoService.frigoApply(user, data);
+  }
+
+  @ApiOperation({
+    summary: "금요귀가 신청 취소",
+    description: "금요귀가를 신청 취소합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Delete("/")
+  async cancel(@CurrentUser() user: User) {
+    return await this.frigoService.cancelApply(user);
+  }
+}

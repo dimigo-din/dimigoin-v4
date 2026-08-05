@@ -1,0 +1,234 @@
+import { Body, Controller, Get, HttpStatus, Post, Query, Req, Res } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import type { FastifyReply, FastifyRequest } from "fastify";
+import type { User } from "#/db/schema";
+import {
+  GoogleAppLoginDTO,
+  GoogleWebLoginDTO,
+  JWTResponse,
+  PasswordLoginDTO,
+  RedirectUriDTO,
+  RefreshTokenDTO,
+  SignupDTO,
+} from "#auth/auth.dto";
+import { AuthService } from "#auth/auth.service";
+import { CustomJwtAuthGuard } from "#auth/guards";
+import { UseGuardsWithSwagger } from "#auth/guards/useGuards";
+import { CurrentUser } from "$decorators/user.decorator";
+import { ApiResponseFormat } from "$dto/response_format.dto";
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "$mapper/constants";
+import { parsePermission } from "$utils/permission.util";
+
+@ApiTags("Auth")
+@Controller("/auth")
+export class AuthController {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly authService: AuthService,
+  ) {}
+
+  @ApiOperation({ summary: "핑" })
+  @Get("/ping")
+  @UseGuardsWithSwagger(CustomJwtAuthGuard)
+  async ping() {
+    return "퐁";
+  }
+
+  @ApiOperation({ summary: "권한 확인" })
+  @ApiResponseFormat({ status: HttpStatus.OK })
+  @Get("/permission")
+  @UseGuardsWithSwagger(CustomJwtAuthGuard)
+  async getPermission(@CurrentUser() user: User) {
+    const permissions = parsePermission(user.permission).map((p) => p.toLowerCase());
+    return { permissions };
+  }
+
+  @ApiOperation({
+    summary: "로그인 - 비밀번호",
+    description: "비밀번호를 이용한 로그인입니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+    type: JWTResponse,
+  })
+  @Post("/login/password")
+  async passwordLogin(
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Body() data: PasswordLoginDTO,
+  ) {
+    const token = await this.authService.loginByIdPassword(data.email, data.password);
+    this.generateCookie(res, token);
+
+    return token;
+  }
+
+  @ApiOperation({
+    summary: "로그인 - 구글",
+    description: "구글 OAuth2 로그인 화면으로 리다이렉트하는 Uri을 반환하는 엔드포인트입니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.FOUND,
+  })
+  @Get("/login/google")
+  async googleLogin(@Query() data: RedirectUriDTO) {
+    return await this.authService.getGoogleLoginUrl(data);
+  }
+
+  @ApiOperation({
+    summary: "로그인 콜백 - 구글",
+    description: "구글 로그인 콜백 엔드포인트입니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.FOUND,
+    type: JWTResponse,
+  })
+  @Post("/login/google/callback")
+  async googleWebLoginCallback(
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Body() data: GoogleWebLoginDTO,
+  ) {
+    const token = await this.authService.loginByGoogle(data.code, null, data.redirect_uri);
+    this.generateCookie(res, token);
+    return token;
+  }
+
+  @ApiOperation({
+    summary: "로그인 콜백 - 구글 앱 로그인",
+    description: "구글 앱 로그인 콜백 엔드포인트입니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.FOUND,
+    type: JWTResponse,
+  })
+  @Post("/login/google/callback/app")
+  async googleAppLoginCallback(
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Body() data: GoogleAppLoginDTO,
+  ) {
+    const token = await this.authService.loginByGoogle(null, data.idToken, null);
+    this.generateCookie(res, token);
+    return token;
+  }
+
+  @ApiOperation({
+    summary: "토큰 재발급",
+    description: "만료된 accessToken을 재발급받습니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+    type: JWTResponse,
+  })
+  @Post("/refresh")
+  async refreshToken(
+    @Req() req: FastifyRequest,
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Body() data: RefreshTokenDTO,
+  ) {
+    let token: { accessToken: string; refreshToken: string };
+    if (!data?.refreshToken) {
+      token = await this.authService.refresh(req.cookies[REFRESH_TOKEN_COOKIE] ?? "");
+      this.generateCookie(res, token);
+    } else {
+      token = await this.authService.refresh(data.refreshToken);
+      return token;
+    }
+  }
+
+  @ApiOperation({
+    summary: "회원가입 - 개인정보 입력",
+    description: "학년, 반, 성별을 입력하여 JWT를 재발급합니다. 이미 입력된 경우 409를 반환합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+    type: JWTResponse,
+  })
+  @Post("/signup")
+  @UseGuardsWithSwagger(CustomJwtAuthGuard)
+  async signup(
+    @CurrentUser() user: User,
+    @Res({ passthrough: true }) res: FastifyReply,
+    @Body() data: SignupDTO,
+  ) {
+    const token = await this.authService.signup(
+      user,
+      data.grade as 1 | 2 | 3,
+      data.class as 1 | 2 | 3 | 4 | 5 | 6,
+      data.gender,
+    );
+    this.generateCookie(res, token);
+    return token;
+  }
+
+  @ApiOperation({
+    summary: "로그아웃",
+    description: "로그아웃합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @UseGuardsWithSwagger(CustomJwtAuthGuard)
+  @Get("/logout")
+  async logout(@CurrentUser() user: User, @Res({ passthrough: true }) res: FastifyReply) {
+    await this.authService.logout(user);
+
+    const sameSite = Bun.env.NODE_ENV !== "dev" ? "none" : "lax";
+    const domains =
+      Bun.env.NODE_ENV !== "dev"
+        ? (this.configService.get<string>("ALLOWED_DOMAIN")?.split(",") ?? [undefined])
+        : [undefined];
+    const secure = Bun.env.NODE_ENV !== "dev";
+
+    res.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.header("Pragma", "no-cache");
+    res.header("Expires", "0");
+
+    for (const domain of domains) {
+      res.clearCookie(ACCESS_TOKEN_COOKIE, {
+        path: "/",
+        httpOnly: true,
+        secure,
+        sameSite,
+        domain,
+      });
+      res.clearCookie(REFRESH_TOKEN_COOKIE, {
+        path: "/",
+        httpOnly: true,
+        secure,
+        sameSite,
+        domain,
+      });
+    }
+    return { success: true };
+  }
+
+  generateCookie(res: FastifyReply, token: { accessToken: string; refreshToken: string }) {
+    res.clearCookie(ACCESS_TOKEN_COOKIE);
+    res.clearCookie(REFRESH_TOKEN_COOKIE);
+
+    const sameSite = Bun.env.NODE_ENV !== "dev" ? "none" : "lax";
+    const domains =
+      Bun.env.NODE_ENV !== "dev"
+        ? (this.configService.get<string>("ALLOWED_DOMAIN")?.split(",") ?? [undefined])
+        : [undefined];
+
+    for (const domain of domains) {
+      res.setCookie(ACCESS_TOKEN_COOKIE, token.accessToken, {
+        path: "/",
+        maxAge: 60 * 30,
+        httpOnly: true,
+        secure: Bun.env.NODE_ENV !== "dev",
+        sameSite,
+        domain,
+      });
+      res.setCookie(REFRESH_TOKEN_COOKIE, token.refreshToken, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+        httpOnly: true,
+        secure: Bun.env.NODE_ENV !== "dev",
+        sameSite,
+        domain,
+      });
+    }
+  }
+}

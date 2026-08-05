@@ -1,0 +1,96 @@
+import { Body, Controller, Delete, Get, HttpStatus, Post, Query } from "@nestjs/common";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import type { User } from "#/db/schema";
+import { CustomJwtAuthGuard } from "#auth/guards";
+import { UseGuardsWithSwagger } from "#auth/guards/useGuards";
+import { CurrentUser } from "$decorators/user.decorator";
+import { ApiResponseFormat } from "$dto/response_format.dto";
+import {
+  ApplicationsResponseDTO,
+  RegisterVideoDTO,
+  SearchVideoDTO,
+  VoteIdDTO,
+  VoteVideoDTO,
+} from "~wakeup/dto/wakeup.student.dto";
+import { WakeupStudentService } from "~wakeup/providers";
+
+@ApiTags("Wakeup Student")
+@Controller("/student/wakeup")
+@UseGuardsWithSwagger(CustomJwtAuthGuard)
+export class WakeupStudentController {
+  constructor(private readonly wakeupService: WakeupStudentService) {}
+
+  @ApiOperation({
+    summary: "음악 검색",
+    description: "유튜브에서 동영상을 검색합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+    // type: ,
+  })
+  @Get("/search")
+  async searchMusic(@CurrentUser() user: User, @Query() data: SearchVideoDTO) {
+    return await this.wakeupService.search(user, data);
+  }
+
+  @ApiOperation({
+    summary: "기상곡 목록",
+    description: "해당 주의 신청된 기상곡들과 해당 기상곡의 투표들을 불러옵니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+    type: ApplicationsResponseDTO,
+  })
+  @Get("/")
+  async getApplications(@CurrentUser() user: User) {
+    return await this.wakeupService.getApplications(user);
+  }
+
+  @ApiOperation({
+    summary: "기상곡 신청",
+    description: "Youtube Video Id를 이용하여 기상곡을 신청합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Post("/")
+  async registerVideo(@CurrentUser() user: User, @Body() data: RegisterVideoDTO) {
+    return await this.wakeupService.registerVideo(user, data);
+  }
+
+  @ApiOperation({
+    summary: "내 투표 목록",
+    description: "본인의 투표 목록을 불러옵니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Get("/vote")
+  async getMyVotes(@CurrentUser() user: User) {
+    return await this.wakeupService.getMyVotes(user);
+  }
+
+  @ApiOperation({
+    summary: "기상곡 투표",
+    description: "신청된 기상곡을 투표합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.CREATED,
+  })
+  @Post("/vote")
+  async vote(@CurrentUser() user: User, @Body() data: VoteVideoDTO) {
+    return await this.wakeupService.vote(user, data);
+  }
+
+  @ApiOperation({
+    summary: "기상곡 투표 취소",
+    description: "신청된 기상곡에 대한 지지를 철회합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+  })
+  @Delete("/vote")
+  async unVote(@CurrentUser() user: User, @Query() data: VoteIdDTO) {
+    return await this.wakeupService.unVote(user, data);
+  }
+}

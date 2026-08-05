@@ -1,0 +1,17 @@
+import { CustomCacheModule } from "./cache.module";
+import { CustomConfigModule } from "./config.module";
+import { DrizzleModule } from "./drizzle.module";
+import { CustomJWTModule } from "./jwt.module";
+import { R2Module } from "./r2.module";
+import { CustomScheduleModule } from "./schedule.module";
+import { ValidationModule } from "./validation.module";
+
+export const CustomEssentialModules = [
+  CustomConfigModule,
+  CustomScheduleModule,
+  DrizzleModule,
+  CustomJWTModule,
+  ValidationModule,
+  CustomCacheModule,
+  R2Module,
+];
