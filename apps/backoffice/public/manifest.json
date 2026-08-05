@@ -1,0 +1,16 @@
+{
+  "name": "디미고인 관리자",
+  "short_name": "디미고인 관리자",
+  "description": "선생님을 위한 디미고인 관리자 페이지입니다.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e83c77",
+  "icons": [
+    {
+      "src": "/dimigoin.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

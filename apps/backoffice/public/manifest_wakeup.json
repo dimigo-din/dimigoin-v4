@@ -1,0 +1,16 @@
+{
+  "name": "디미고인 기상곡",
+  "short_name": "기상곡",
+  "description": "오늘의 기상곡을 엽니다.",
+  "start_url": "/openwakeup",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e83c77",
+  "icons": [
+    {
+      "src": "/dimigoin.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

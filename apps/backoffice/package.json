@@ -1,0 +1,43 @@
+{
+  "name": "dimigoin-backoffice-v4",
+  "private": true,
+  "version": "4.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "biome": "biome check",
+    "biome:write": "biome check --write",
+    "lint": "biome lint --write",
+    "format": "biome format --write",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@date-fns/tz": "^1.4.1",
+    "axios": "^1.13.2",
+    "date-fns": "^4.1.0",
+    "html2canvas": "^1.4.1",
+    "idb": "^7.1.1",
+    "jszip": "^3.10.1",
+    "papaparse": "^5.5.3",
+    "print-js": "^1.6.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-router-dom": "^7.11.0",
+    "styled-components": "^6.2.0",
+    "xlsx-js-style": "^1.2.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.6",
+    "@types/html2pdf.js": "^0.10.0",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "globals": "^17.0.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.52.0",
+    "vite": "^8.0.13",
+    "vite-plugin-svgr": "^4.5.0"
+  }
+}
