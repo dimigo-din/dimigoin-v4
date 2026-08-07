@@ -95,12 +95,7 @@ export async function deleteFacilityImg(id: string): Promise<void> {
 export async function getFacilityImgObjectUrl(id: string): Promise<string> {
   const base =
     location.host !== "localhost:5173" && location.host !== "localhost:5174"
-      ? `https://api.${location.host
-          .split(".")
-          .reverse()
-          .filter((_, i) => i <= 1)
-          .reverse()
-          .join(".")}`
+      ? `https://dev-api.dimigoin.io`
       : "http://localhost:3000";
   const res = await fetch(`${base}/manage/facility/img?id=${id}`, { credentials: "include" });
   return URL.createObjectURL(await res.blob());
