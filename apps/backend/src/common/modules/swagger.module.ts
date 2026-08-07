@@ -7,7 +7,7 @@ import { AppService } from "#app/app.service";
 export const CustomSwaggerSetup = async (app: NestFastifyApplication) => {
   const logger = new Logger(CustomSwaggerSetup.name);
 
-  if (Bun.env.NODE_ENV === "prod") {
+  if (process.env.NODE_ENV === "prod") {
     logger.log("Swagger not initializing in production");
     return;
   }

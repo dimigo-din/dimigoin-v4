@@ -1,10 +1,10 @@
-import { mock } from "bun:test";
 import fastifyCookie from "@fastify/cookie";
 import fastifyMultipart from "@fastify/multipart";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Global, Module, ValidationPipe } from "@nestjs/common";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import { Test, TestingModule } from "@nestjs/testing";
+import { vi } from "vitest";
 import { AppModule } from "#app/app.module";
 import { createMockDrizzleDB } from "#test/mocks/repository";
 import * as interceptors from "$/interceptors";
@@ -24,22 +24,22 @@ class MockDatabaseModule {}
     {
       provide: CACHE_MANAGER,
       useValue: {
-        get: mock(async () => null),
-        set: mock(async () => undefined),
-        del: mock(async () => undefined),
-        reset: mock(async () => undefined),
+        get: vi.fn(async () => null),
+        set: vi.fn(async () => undefined),
+        del: vi.fn(async () => undefined),
+        reset: vi.fn(async () => undefined),
       },
     },
     {
       provide: CacheService,
       useValue: {
-        musicSearchRateLimit: mock(async () => true),
-        cacheSearchResults: mock(async () => undefined),
-        getCachedVideo: mock(async () => null),
-        getPersonalInformationVerifyTokenSecret: mock(async () => "mock-secret"),
-        setCachedTimetable: mock(async () => undefined),
-        getCachedTimetable: mock(async () => undefined),
-        isNotificationAlreadySent: mock(async () => false),
+        musicSearchRateLimit: vi.fn(async () => true),
+        cacheSearchResults: vi.fn(async () => undefined),
+        getCachedVideo: vi.fn(async () => null),
+        getPersonalInformationVerifyTokenSecret: vi.fn(async () => "mock-secret"),
+        setCachedTimetable: vi.fn(async () => undefined),
+        getCachedTimetable: vi.fn(async () => undefined),
+        isNotificationAlreadySent: vi.fn(async () => false),
       },
     },
   ],

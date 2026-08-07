@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   forwardRef,
   HttpException,
@@ -9,6 +10,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { compare } from "bcryptjs";
 import { subMonths } from "date-fns";
 import { eq, lt } from "drizzle-orm";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
@@ -53,7 +55,7 @@ export class AuthService {
     if (!loginRecord) {
       throw new HttpException(ErrorMsg.UserIdentifier_NotFound(), HttpStatus.UNAUTHORIZED);
     }
-    if (!(await Bun.password.verify(password, loginRecord.identifier2 ?? ""))) {
+    if (!(await compare(password, loginRecord.identifier2 ?? ""))) {
       throw new HttpException(ErrorMsg.UserIdentifier_NotMatched(), HttpStatus.UNAUTHORIZED);
     }
 
@@ -229,14 +231,14 @@ export class AuthService {
     accessExpire: StringValue,
     old?: typeof session.$inferSelect,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const sessionIdentifier = Bun.randomUUIDv7();
+    const sessionIdentifier = randomUUID();
 
     const keyPair = {
       accessToken: await this.jwtService.signAsync(
         { sessionIdentifier, ...userRecord },
         { expiresIn: accessExpire || "10m" },
       ),
-      refreshToken: Bun.randomUUIDv7(),
+      refreshToken: randomUUID(),
     };
 
     if (old) {

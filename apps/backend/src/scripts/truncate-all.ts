@@ -1,25 +1,28 @@
-import { SQL } from "bun";
+import { Client } from "pg";
 
-const client = new SQL({
-  hostname: Bun.env.DB_HOST,
-  port: Number(Bun.env.DB_PORT),
-  username: Bun.env.DB_USER,
-  password: Bun.env.DB_PASS,
-  database: Bun.env.DB_NAME,
+const client = new Client({
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME,
 });
 
 (async () => {
   try {
-    await client("SET session_replication_role = 'replica';");
+    await client.connect();
+    await client.query("SET session_replication_role = 'replica';");
 
-    const { rows } = await client("SELECT tablename FROM pg_tables WHERE schemaname = 'public'");
+    const { rows } = await client.query<{ tablename: string }>(
+      "SELECT tablename FROM pg_tables WHERE schemaname = 'public'",
+    );
 
     for (const row of rows) {
-      await client(`TRUNCATE TABLE "${row.tablename}" RESTART IDENTITY CASCADE;`);
+      await client.query(`TRUNCATE TABLE "${row.tablename}" RESTART IDENTITY CASCADE;`);
     }
 
-    await client("SET session_replication_role = 'origin';");
+    await client.query("SET session_replication_role = 'origin';");
   } finally {
-    await client.close();
+    await client.end();
   }
 })();

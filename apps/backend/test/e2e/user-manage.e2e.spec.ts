@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { HttpStatus } from "@nestjs/common";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { E2EContext, setupE2EContext } from "#test/helpers";
 
 describe("User Manage E2E", () => {

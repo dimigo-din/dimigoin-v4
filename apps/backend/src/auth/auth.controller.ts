@@ -172,12 +172,12 @@ export class AuthController {
   async logout(@CurrentUser() user: User, @Res({ passthrough: true }) res: FastifyReply) {
     await this.authService.logout(user);
 
-    const sameSite = Bun.env.NODE_ENV !== "dev" ? "none" : "lax";
+    const sameSite = process.env.NODE_ENV !== "dev" ? "none" : "lax";
     const domains =
-      Bun.env.NODE_ENV !== "dev"
+      process.env.NODE_ENV !== "dev"
         ? (this.configService.get<string>("ALLOWED_DOMAIN")?.split(",") ?? [undefined])
         : [undefined];
-    const secure = Bun.env.NODE_ENV !== "dev";
+    const secure = process.env.NODE_ENV !== "dev";
 
     res.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.header("Pragma", "no-cache");
@@ -206,9 +206,9 @@ export class AuthController {
     res.clearCookie(ACCESS_TOKEN_COOKIE);
     res.clearCookie(REFRESH_TOKEN_COOKIE);
 
-    const sameSite = Bun.env.NODE_ENV !== "dev" ? "none" : "lax";
+    const sameSite = process.env.NODE_ENV !== "dev" ? "none" : "lax";
     const domains =
-      Bun.env.NODE_ENV !== "dev"
+      process.env.NODE_ENV !== "dev"
         ? (this.configService.get<string>("ALLOWED_DOMAIN")?.split(",") ?? [undefined])
         : [undefined];
 
@@ -217,7 +217,7 @@ export class AuthController {
         path: "/",
         maxAge: 60 * 30,
         httpOnly: true,
-        secure: Bun.env.NODE_ENV !== "dev",
+        secure: process.env.NODE_ENV !== "dev",
         sameSite,
         domain,
       });
@@ -225,7 +225,7 @@ export class AuthController {
         path: "/",
         maxAge: 60 * 60 * 24 * 30,
         httpOnly: true,
-        secure: Bun.env.NODE_ENV !== "dev",
+        secure: process.env.NODE_ENV !== "dev",
         sameSite,
         domain,
       });

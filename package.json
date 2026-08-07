@@ -35,8 +35,10 @@
     "clean": "npm --workspace @dimigoin-v4/backend run clean && npm --workspace @dimigoin-v4/backoffice run clean"
   },
   "devDependencies": {
-    "@dimigoin-v4/biome-config": "0.0.0",
     "@biomejs/biome": "^2.4.15",
+    "@dimigoin-v4/biome-config": "0.0.0",
+    "@swc/cli": "^0.8.1",
+    "@swc/core": "^1.15.21",
     "concurrently": "^9.2.1",
     "typescript": "~6.0.2"
   },

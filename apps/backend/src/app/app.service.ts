@@ -30,7 +30,7 @@ export class AppService {
     const packageFile = await import(`${process.cwd()}/package.json`);
     const { name, version, description, author } = packageFile;
 
-    const mode = (Bun.env.NODE_ENV as Deployment) || "prod";
+    const mode = (process.env.NODE_ENV as Deployment) || "prod";
 
     this.cluster = { name, version, description, author, mode };
     return this.cluster;

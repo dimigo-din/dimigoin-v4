@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import * as path from "node:path";
 import {
   CallHandler,
@@ -60,7 +61,7 @@ export class ImageUploadInterceptor implements NestInterceptor {
     }
 
     for (const file of files) {
-      file.filename = Bun.randomUUIDv7();
+      file.filename = randomUUID();
     }
 
     req.body.file = files;

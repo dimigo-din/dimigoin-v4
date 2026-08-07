@@ -1,4 +1,4 @@
-import { mock } from "bun:test";
+import { vi } from "vitest";
 import type { DrizzleDB } from "$modules/drizzle.module";
 
 export const createMockDrizzleDB = (): DrizzleDB => {
@@ -6,50 +6,50 @@ export const createMockDrizzleDB = (): DrizzleDB => {
     {},
     {
       get: () => ({
-        findFirst: mock(async () => null),
-        findMany: mock(async () => []),
+        findFirst: vi.fn(async () => null),
+        findMany: vi.fn(async () => []),
       }),
     },
   );
 
   return {
     query: mockQuery,
-    select: mock(() => ({
-      from: mock(() => ({
-        where: mock(() => ({
-          limit: mock(async () => []),
-          returning: mock(async () => []),
-          execute: mock(async () => []),
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(async () => []),
+          returning: vi.fn(async () => []),
+          execute: vi.fn(async () => []),
         })),
-        limit: mock(async () => []),
-        leftJoin: mock(() => ({
-          where: mock(() => ({
-            groupBy: mock(async () => []),
+        limit: vi.fn(async () => []),
+        leftJoin: vi.fn(() => ({
+          where: vi.fn(() => ({
+            groupBy: vi.fn(async () => []),
           })),
         })),
-        execute: mock(async () => []),
+        execute: vi.fn(async () => []),
       })),
     })),
-    insert: mock(() => ({
-      values: mock(() => ({
-        returning: mock(async () => [{}]),
-        onConflictDoUpdate: mock(() => ({
-          returning: mock(async () => [{}]),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => ({
+        returning: vi.fn(async () => [{}]),
+        onConflictDoUpdate: vi.fn(() => ({
+          returning: vi.fn(async () => [{}]),
         })),
       })),
     })),
-    update: mock(() => ({
-      set: mock(() => ({
-        where: mock(() => ({
-          returning: mock(async () => [{}]),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn(() => ({
+          returning: vi.fn(async () => [{}]),
         })),
       })),
     })),
-    delete: mock(() => ({
-      where: mock(() => ({
-        returning: mock(async () => [{}]),
+    delete: vi.fn(() => ({
+      where: vi.fn(() => ({
+        returning: vi.fn(async () => [{}]),
       })),
     })),
-    execute: mock(async () => []),
+    execute: vi.fn(async () => []),
   } as unknown as DrizzleDB;
 };

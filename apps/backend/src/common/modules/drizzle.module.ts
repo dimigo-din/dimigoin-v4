@@ -1,13 +1,14 @@
 import { Global, Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { SQL } from "bun";
-import { drizzle } from "drizzle-orm/bun-sql";
-import { relations, schema } from "#/db";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { relations } from "#/db";
 import { CustomConfigModule } from "$modules/config.module";
 
 export const DRIZZLE = Symbol("DRIZZLE");
 
-export type DrizzleDB = ReturnType<typeof drizzle<typeof schema, typeof relations>>;
+const drizzleSchema = relations;
+
+export type DrizzleDB = ReturnType<typeof drizzle<typeof drizzleSchema>>;
 
 @Global()
 @Module({
@@ -17,18 +18,16 @@ export type DrizzleDB = ReturnType<typeof drizzle<typeof schema, typeof relation
       provide: DRIZZLE,
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        const client = new SQL({
-          hostname: configService.get<string>("DB_HOST"),
-          port: configService.get<number>("DB_PORT"),
-          username: configService.get<string>("DB_USER"),
-          password: configService.get<string>("DB_PASS"),
-          database: configService.get<string>("DB_NAME"),
-        });
-        return drizzle({
-          client,
-          schema,
-          relations,
-          logger: Bun.env.NODE_ENV !== "prod",
+        const url = new URL("postgresql://localhost");
+        url.hostname = configService.getOrThrow<string>("DB_HOST");
+        url.port = String(configService.getOrThrow<number>("DB_PORT"));
+        url.username = configService.getOrThrow<string>("DB_USER");
+        url.password = configService.getOrThrow<string>("DB_PASS");
+        url.pathname = configService.getOrThrow<string>("DB_NAME");
+
+        return drizzle<typeof drizzleSchema>(url.toString(), {
+          relations: drizzleSchema,
+          logger: process.env.NODE_ENV !== "prod",
         });
       },
     },

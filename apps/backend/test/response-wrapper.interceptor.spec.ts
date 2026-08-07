@@ -1,6 +1,6 @@
-import { describe, expect, test } from "bun:test";
 import type { CallHandler, ExecutionContext } from "@nestjs/common";
 import { firstValueFrom, of } from "rxjs";
+import { describe, expect, test } from "vitest";
 import { ResponseWrapperInterceptor } from "$interceptors/response_wapper.service";
 
 describe("ResponseWrapperInterceptor", () => {

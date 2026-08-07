@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { hash } from "bcryptjs";
 import { eq, like } from "drizzle-orm";
 import { login, user } from "#/db/schema";
 import { ErrorMsg } from "$mapper/error";
@@ -105,7 +106,7 @@ export class UserManageService {
   }
 
   async addPasswordLogin(userId: string, password: string) {
-    const hashedPassword = await Bun.password.hash(password);
+    const hashedPassword = await hash(password, 10);
 
     const dbUser = await this.db.query.user.findFirst({
       where: { RAW: (t, { eq }) => eq(t.id, userId) },

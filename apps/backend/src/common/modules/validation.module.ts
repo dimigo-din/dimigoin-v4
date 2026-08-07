@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { Inject, Injectable, Logger, Module } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 import { permissionValidator, user } from "#/db/schema";
@@ -37,8 +38,8 @@ export class ValidationService {
     };
 
     if (
-      Bun.deepEquals(PermissionEnum, fixedPermissionMappings) &&
-      Bun.deepEquals(NumberedPermissionGroupsEnum, fixedPermissionGroupMappings)
+      isDeepStrictEqual(PermissionEnum, fixedPermissionMappings) &&
+      isDeepStrictEqual(NumberedPermissionGroupsEnum, fixedPermissionGroupMappings)
     ) {
       this.logger.log("Permission validation successful - no changes");
       return;

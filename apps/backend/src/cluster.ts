@@ -1,7 +1,7 @@
 import cluster from "node:cluster";
 import os from "node:os";
 
-const numWorkers = parseInt(Bun.env.PM2_INSTANCES || "0", 10) || os.cpus().length;
+const numWorkers = parseInt(process.env.PM2_INSTANCES || "0", 10) || os.cpus().length;
 
 async function bootstrap() {
   if (numWorkers > 1 && cluster.isPrimary) {
@@ -14,7 +14,7 @@ async function bootstrap() {
     });
   } else {
     const { bootstrap } = await import("./main");
-    const isFirstWorker = Bun.env.WORKER_INDEX === "0";
+    const isFirstWorker = process.env.WORKER_INDEX === "0";
     await bootstrap(isFirstWorker);
 
     if (isFirstWorker) {

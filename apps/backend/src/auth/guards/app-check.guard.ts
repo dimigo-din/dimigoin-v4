@@ -27,7 +27,7 @@ export class AppCheckGuard implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    if (Bun.env.NODE_ENV === "dev") {
+    if (process.env.NODE_ENV === "dev") {
       return true;
     }
 

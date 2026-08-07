@@ -1,8 +1,8 @@
-import { mock } from "bun:test";
-import { generateKeyPairSync } from "node:crypto";
+import { generateKeyPairSync, randomUUID } from "node:crypto";
 import { NotFoundException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { NestFastifyApplication } from "@nestjs/platform-fastify";
+import { vi } from "vitest";
 import type { Session, User } from "#/db/schema";
 import { JWTResponse } from "#auth/auth.dto";
 import { AuthService } from "#auth/auth.service";
@@ -37,10 +37,10 @@ export interface E2EContext {
 }
 
 const ensureJwtKeys = () => {
-  if (!Bun.env.JWT_PRIVATE || !Bun.env.JWT_PUBLIC) {
+  if (!process.env.JWT_PRIVATE || !process.env.JWT_PUBLIC) {
     const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
-    Bun.env.JWT_PRIVATE = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
-    Bun.env.JWT_PUBLIC = publicKey.export({ type: "spki", format: "pem" }).toString();
+    process.env.JWT_PRIVATE = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+    process.env.JWT_PUBLIC = publicKey.export({ type: "spki", format: "pem" }).toString();
   }
 };
 
@@ -76,20 +76,20 @@ const setupAuthMocks = async (
   const jwtService = app.get(JwtService);
   const sessionStore: Session[] = [];
 
-  authService.loginByIdPassword = mock(async (id: string, _password: string) => {
+  authService.loginByIdPassword = vi.fn(async (id: string, _password: string) => {
     const user =
       id === studentUser.email ? studentUser : id === teacherUser.email ? teacherUser : null;
     if (!user) {
       throw new Error("User not found");
     }
 
-    const sessionIdentifier = Bun.randomUUIDv7();
+    const sessionIdentifier = randomUUID();
     const keyPair = {
       accessToken: await jwtService.signAsync({ sessionIdentifier, ...user }, { expiresIn: "30m" }),
-      refreshToken: Bun.randomUUIDv7(),
+      refreshToken: randomUUID(),
     };
     sessionStore.push({
-      id: Bun.randomUUIDv7(),
+      id: randomUUID(),
       refreshToken: keyPair.refreshToken,
       sessionIdentifier,
       userId: user.id,
@@ -99,7 +99,7 @@ const setupAuthMocks = async (
     return keyPair;
   }) as typeof authService.loginByIdPassword;
 
-  authService.refresh = mock(async (refreshToken: string) => {
+  authService.refresh = vi.fn(async (refreshToken: string) => {
     const sessionRecord = sessionStore.find((s) => s.refreshToken === refreshToken);
     if (!sessionRecord) {
       throw new NotFoundException("Session not found");
@@ -115,10 +115,10 @@ const setupAuthMocks = async (
       throw new NotFoundException("User not found");
     }
 
-    const sessionIdentifier = Bun.randomUUIDv7();
+    const sessionIdentifier = randomUUID();
     const keyPair = {
       accessToken: await jwtService.signAsync({ sessionIdentifier, ...user }, { expiresIn: "30m" }),
-      refreshToken: Bun.randomUUIDv7(),
+      refreshToken: randomUUID(),
     };
 
     sessionRecord.refreshToken = keyPair.refreshToken;
@@ -128,7 +128,7 @@ const setupAuthMocks = async (
     return keyPair;
   }) as typeof authService.refresh;
 
-  authService.logout = mock(async (userJwt: { sessionIdentifier: string }) => {
+  authService.logout = vi.fn(async (userJwt: { sessionIdentifier: string }) => {
     const idx = sessionStore.findIndex((s) => s.sessionIdentifier === userJwt.sessionIdentifier);
     if (idx < 0) {
       throw new Error("Session not found");
@@ -194,254 +194,254 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubMethod(
     stayStudentService,
     "getStayList",
-    mock(async () => []) as unknown as (typeof stayStudentService)["getStayList"],
+    vi.fn(async () => []) as unknown as (typeof stayStudentService)["getStayList"],
   );
   stubMethod(
     stayStudentService,
     "getStayApplies",
-    mock(async () => []) as unknown as (typeof stayStudentService)["getStayApplies"],
+    vi.fn(async () => []) as unknown as (typeof stayStudentService)["getStayApplies"],
   );
   stubMethod(
     stayStudentService,
     "createStayApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "stay-apply-1",
     })) as unknown as (typeof stayStudentService)["createStayApply"],
   );
   stubMethod(
     stayStudentService,
     "updateStayApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "stay-apply-1",
     })) as unknown as (typeof stayStudentService)["updateStayApply"],
   );
   stubMethod(
     stayStudentService,
     "deleteStayApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "stay-apply-1",
     })) as unknown as (typeof stayStudentService)["deleteStayApply"],
   );
   stubMethod(
     stayStudentService,
     "getStayOuting",
-    mock(async () => []) as unknown as (typeof stayStudentService)["getStayOuting"],
+    vi.fn(async () => []) as unknown as (typeof stayStudentService)["getStayOuting"],
   );
   stubMethod(
     stayStudentService,
     "addStayOuting",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "outing-1",
     })) as unknown as (typeof stayStudentService)["addStayOuting"],
   );
   stubMethod(
     stayStudentService,
     "editStayOuting",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "outing-1",
     })) as unknown as (typeof stayStudentService)["editStayOuting"],
   );
   stubMethod(
     stayStudentService,
     "removeStayOuting",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "outing-1",
     })) as unknown as (typeof stayStudentService)["removeStayOuting"],
   );
   stubMethod(
     stayManageService,
     "getStayList",
-    mock(async () => []) as unknown as (typeof stayManageService)["getStayList"],
+    vi.fn(async () => []) as unknown as (typeof stayManageService)["getStayList"],
   );
   stubMethod(
     stayManageService,
     "createStay",
-    mock(async () => ({ id: "stay-1" })) as unknown as (typeof stayManageService)["createStay"],
+    vi.fn(async () => ({ id: "stay-1" })) as unknown as (typeof stayManageService)["createStay"],
   );
   stubMethod(
     stayManageService,
     "getStay",
-    mock(async () => ({ id: "stay-1" })) as unknown as (typeof stayManageService)["getStay"],
+    vi.fn(async () => ({ id: "stay-1" })) as unknown as (typeof stayManageService)["getStay"],
   );
   stubMethod(
     stayManageService,
     "getStaySeatPresetList",
-    mock(async () => []) as unknown as (typeof stayManageService)["getStaySeatPresetList"],
+    vi.fn(async () => []) as unknown as (typeof stayManageService)["getStaySeatPresetList"],
   );
   stubMethod(
     stayManageService,
     "getStaySeatPreset",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "preset-1",
     })) as unknown as (typeof stayManageService)["getStaySeatPreset"],
   );
   stubMethod(
     stayManageService,
     "createStaySeatPreset",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "preset-1",
     })) as unknown as (typeof stayManageService)["createStaySeatPreset"],
   );
   stubMethod(
     stayManageService,
     "updateStaySeatPreset",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "preset-1",
     })) as unknown as (typeof stayManageService)["updateStaySeatPreset"],
   );
   stubMethod(
     stayManageService,
     "deleteStaySeatPreset",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "preset-1",
     })) as unknown as (typeof stayManageService)["deleteStaySeatPreset"],
   );
   stubMethod(
     stayManageService,
     "getStayScheduleList",
-    mock(async () => []) as unknown as (typeof stayManageService)["getStayScheduleList"],
+    vi.fn(async () => []) as unknown as (typeof stayManageService)["getStayScheduleList"],
   );
   stubMethod(
     stayManageService,
     "getStaySchedule",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "schedule-1",
     })) as unknown as (typeof stayManageService)["getStaySchedule"],
   );
   stubMethod(
     stayManageService,
     "createStaySchedule",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "schedule-1",
     })) as unknown as (typeof stayManageService)["createStaySchedule"],
   );
   stubMethod(
     stayManageService,
     "updateStaySchedule",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "schedule-1",
     })) as unknown as (typeof stayManageService)["updateStaySchedule"],
   );
   stubMethod(
     stayManageService,
     "deleteStaySchedule",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "schedule-1",
     })) as unknown as (typeof stayManageService)["deleteStaySchedule"],
   );
   stubMethod(
     stayManageService,
     "updateStay",
-    mock(async () => ({ id: "stay-1" })) as unknown as (typeof stayManageService)["updateStay"],
+    vi.fn(async () => ({ id: "stay-1" })) as unknown as (typeof stayManageService)["updateStay"],
   );
   stubMethod(
     stayManageService,
     "deleteStay",
-    mock(async () => ({ id: "stay-1" })) as unknown as (typeof stayManageService)["deleteStay"],
+    vi.fn(async () => ({ id: "stay-1" })) as unknown as (typeof stayManageService)["deleteStay"],
   );
   stubMethod(
     stayManageService,
     "getStayApply",
-    mock(async () => []) as unknown as (typeof stayManageService)["getStayApply"],
+    vi.fn(async () => []) as unknown as (typeof stayManageService)["getStayApply"],
   );
   stubMethod(
     stayManageService,
     "createStayApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "stay-apply-1",
     })) as unknown as (typeof stayManageService)["createStayApply"],
   );
   stubMethod(
     stayManageService,
     "updateStayApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "stay-apply-1",
     })) as unknown as (typeof stayManageService)["updateStayApply"],
   );
   stubMethod(
     stayManageService,
     "deleteStayApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "stay-apply-1",
     })) as unknown as (typeof stayManageService)["deleteStayApply"],
   );
   stubMethod(
     stayManageService,
     "auditOuting",
-    mock(async () => ({ id: "outing-1" })) as unknown as (typeof stayManageService)["auditOuting"],
+    vi.fn(async () => ({ id: "outing-1" })) as unknown as (typeof stayManageService)["auditOuting"],
   );
   stubMethod(
     stayManageService,
     "updateOutingMealCancel",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "outing-1",
     })) as unknown as (typeof stayManageService)["updateOutingMealCancel"],
   );
   stubMethod(
     stayManageService,
     "moveToSomewhere",
-    mock(async () => []) as unknown as (typeof stayManageService)["moveToSomewhere"],
+    vi.fn(async () => []) as unknown as (typeof stayManageService)["moveToSomewhere"],
   );
 
   stubMethod(
     frigoManageService,
     "getApplyPeriod",
-    mock(async () => []) as unknown as (typeof frigoManageService)["getApplyPeriod"],
+    vi.fn(async () => []) as unknown as (typeof frigoManageService)["getApplyPeriod"],
   );
   stubMethod(
     frigoManageService,
     "getApplyList",
-    mock(async () => []) as unknown as (typeof frigoManageService)["getApplyList"],
+    vi.fn(async () => []) as unknown as (typeof frigoManageService)["getApplyList"],
   );
   stubMethod(
     frigoManageService,
     "setApplyPeriod",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "period-1",
     })) as unknown as (typeof frigoManageService)["setApplyPeriod"],
   );
   stubMethod(
     frigoManageService,
     "removeApplyPeriod",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "period-1",
     })) as unknown as (typeof frigoManageService)["removeApplyPeriod"],
   );
   stubMethod(
     frigoManageService,
     "apply",
-    mock(async () => ({ id: "frigo-apply-1" })) as unknown as (typeof frigoManageService)["apply"],
+    vi.fn(async () => ({ id: "frigo-apply-1" })) as unknown as (typeof frigoManageService)["apply"],
   );
   stubMethod(
     frigoManageService,
     "removeApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "frigo-apply-1",
     })) as unknown as (typeof frigoManageService)["removeApply"],
   );
   stubMethod(
     frigoManageService,
     "auditApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "frigo-apply-1",
     })) as unknown as (typeof frigoManageService)["auditApply"],
   );
   stubMethod(
     frigoStudentService,
     "getApply",
-    mock(async () => ({})) as unknown as (typeof frigoStudentService)["getApply"],
+    vi.fn(async () => ({})) as unknown as (typeof frigoStudentService)["getApply"],
   );
   stubMethod(
     frigoStudentService,
     "frigoApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "frigo-apply-1",
     })) as unknown as (typeof frigoStudentService)["frigoApply"],
   );
   stubMethod(
     frigoStudentService,
     "cancelApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "frigo-apply-1",
     })) as unknown as (typeof frigoStudentService)["cancelApply"],
   );
@@ -449,19 +449,19 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubMethod(
     facilityStudentService,
     "reportList",
-    mock(async () => []) as unknown as (typeof facilityStudentService)["reportList"],
+    vi.fn(async () => []) as unknown as (typeof facilityStudentService)["reportList"],
   );
   stubMethod(
     facilityStudentService,
     "getReport",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "facility-1",
     })) as unknown as (typeof facilityStudentService)["getReport"],
   );
   stubMethod(
     facilityStudentService,
     "getImg",
-    mock(async () => ({
+    vi.fn(async () => ({
       filename: "facility.jpg",
       stream: "binary",
     })) as unknown as (typeof facilityStudentService)["getImg"],
@@ -469,21 +469,21 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubMethod(
     facilityStudentService,
     "createReport",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "facility-1",
     })) as unknown as (typeof facilityStudentService)["createReport"],
   );
   stubMethod(
     facilityStudentService,
     "writeComment",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "comment-1",
     })) as unknown as (typeof facilityStudentService)["writeComment"],
   );
   stubMethod(
     facilityManageService,
     "getImg",
-    mock(async () => ({
+    vi.fn(async () => ({
       filename: "facility.jpg",
       stream: "binary",
     })) as unknown as (typeof facilityManageService)["getImg"],
@@ -491,59 +491,59 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubMethod(
     facilityManageService,
     "deleteImg",
-    mock(async () => ({ id: "img-1" })) as unknown as (typeof facilityManageService)["deleteImg"],
+    vi.fn(async () => ({ id: "img-1" })) as unknown as (typeof facilityManageService)["deleteImg"],
   );
   stubMethod(
     facilityManageService,
     "reportList",
-    mock(async () => []) as unknown as (typeof facilityManageService)["reportList"],
+    vi.fn(async () => []) as unknown as (typeof facilityManageService)["reportList"],
   );
   stubMethod(
     facilityManageService,
     "getReport",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "facility-1",
     })) as unknown as (typeof facilityManageService)["getReport"],
   );
   stubMethod(
     facilityManageService,
     "createReport",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "facility-1",
     })) as unknown as (typeof facilityManageService)["createReport"],
   );
   stubMethod(
     facilityManageService,
     "deleteReport",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "facility-1",
     })) as unknown as (typeof facilityManageService)["deleteReport"],
   );
   stubMethod(
     facilityManageService,
     "writeComment",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "comment-1",
     })) as unknown as (typeof facilityManageService)["writeComment"],
   );
   stubMethod(
     facilityManageService,
     "deleteComment",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "comment-1",
     })) as unknown as (typeof facilityManageService)["deleteComment"],
   );
   stubMethod(
     facilityManageService,
     "changeType",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "facility-1",
     })) as unknown as (typeof facilityManageService)["changeType"],
   );
   stubMethod(
     facilityManageService,
     "changeStatus",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "facility-1",
     })) as unknown as (typeof facilityManageService)["changeStatus"],
   );
@@ -551,36 +551,36 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubMethod(
     laundryStudentService,
     "getTimeline",
-    mock(async () => []) as unknown as (typeof laundryStudentService)["getTimeline"],
+    vi.fn(async () => []) as unknown as (typeof laundryStudentService)["getTimeline"],
   );
   stubMethod(
     laundryStudentService,
     "getApplies",
-    mock(async () => []) as unknown as (typeof laundryStudentService)["getApplies"],
+    vi.fn(async () => []) as unknown as (typeof laundryStudentService)["getApplies"],
   );
   stubMethod(
     laundryStudentService,
     "createApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "laundry-apply-1",
     })) as unknown as (typeof laundryStudentService)["createApply"],
   );
   stubMethod(
     laundryStudentService,
     "deleteApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "laundry-apply-1",
     })) as unknown as (typeof laundryStudentService)["deleteApply"],
   );
   stubMethod(
     laundryManageService,
     "getLaundryMachineList",
-    mock(async () => []) as unknown as (typeof laundryManageService)["getLaundryMachineList"],
+    vi.fn(async () => []) as unknown as (typeof laundryManageService)["getLaundryMachineList"],
   );
   stubMethod(
     laundryManageService,
     "createLaundryMachine",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "machine-1",
     })) as unknown as (typeof laundryManageService)["createLaundryMachine"],
   );
@@ -588,41 +588,41 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubMethod(
     pushStudentService,
     "getSubjects",
-    mock(async () => [
+    vi.fn(async () => [
       { identifier: "notice", name: "Notice" },
     ]) as unknown as (typeof pushStudentService)["getSubjects"],
   );
   stubMethod(
     pushStudentService,
     "removeToken",
-    mock(async () => ({ removed: true })) as unknown as (typeof pushStudentService)["removeToken"],
+    vi.fn(async () => ({ removed: true })) as unknown as (typeof pushStudentService)["removeToken"],
   );
   stubMethod(
     pushStudentService,
     "removeAllByUser",
-    mock(async () => []) as unknown as (typeof pushStudentService)["removeAllByUser"],
+    vi.fn(async () => []) as unknown as (typeof pushStudentService)["removeAllByUser"],
   );
   stubMethod(
     pushStudentService,
     "getSubscribedSubject",
-    mock(async () => []) as unknown as (typeof pushStudentService)["getSubscribedSubject"],
+    vi.fn(async () => []) as unknown as (typeof pushStudentService)["getSubscribedSubject"],
   );
   stubMethod(
     pushStudentService,
     "setSubscribeSubject",
-    mock(async () => []) as unknown as (typeof pushStudentService)["setSubscribeSubject"],
+    vi.fn(async () => []) as unknown as (typeof pushStudentService)["setSubscribeSubject"],
   );
   stubMethod(
     pushStudentService,
     "upsertToken",
-    mock(async () => ({
+    vi.fn(async () => ({
       token: "test-fcm-token",
     })) as unknown as (typeof pushStudentService)["upsertToken"],
   );
   stubMethod(
     pushManageService,
     "sendToAll",
-    mock(async () => ({
+    vi.fn(async () => ({
       sent: 0,
       failed: 0,
     })) as unknown as (typeof pushManageService)["sendToAll"],
@@ -630,7 +630,7 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubMethod(
     pushManageService,
     "sendToSpecificUsers",
-    mock(async () => ({
+    vi.fn(async () => ({
       sent: 0,
       failed: 0,
     })) as unknown as (typeof pushManageService)["sendToSpecificUsers"],
@@ -638,13 +638,13 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubMethod(
     pushManageService,
     "getSubscriptionsByUser",
-    mock(async () => []) as unknown as (typeof pushManageService)["getSubscriptionsByUser"],
+    vi.fn(async () => []) as unknown as (typeof pushManageService)["getSubscriptionsByUser"],
   );
 
   stubMethod(
     wakeupService,
     "getDateSong",
-    mock(async () => ({
+    vi.fn(async () => ({
       title: "Test Song",
       channel: "Test Channel",
       url: "https://youtube.com/watch?v=test",
@@ -654,51 +654,51 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubMethod(
     wakeupStudentService,
     "search",
-    mock(async () => ({ items: [] })) as unknown as (typeof wakeupStudentService)["search"],
+    vi.fn(async () => ({ items: [] })) as unknown as (typeof wakeupStudentService)["search"],
   );
   stubMethod(
     wakeupStudentService,
     "getApplications",
-    mock(async () => []) as unknown as (typeof wakeupStudentService)["getApplications"],
+    vi.fn(async () => []) as unknown as (typeof wakeupStudentService)["getApplications"],
   );
   stubMethod(
     wakeupStudentService,
     "registerVideo",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "wakeup-apply-1",
     })) as unknown as (typeof wakeupStudentService)["registerVideo"],
   );
   stubMethod(
     wakeupStudentService,
     "getMyVotes",
-    mock(async () => []) as unknown as (typeof wakeupStudentService)["getMyVotes"],
+    vi.fn(async () => []) as unknown as (typeof wakeupStudentService)["getMyVotes"],
   );
   stubMethod(
     wakeupStudentService,
     "vote",
-    mock(async () => ({ id: "vote-1" })) as unknown as (typeof wakeupStudentService)["vote"],
+    vi.fn(async () => ({ id: "vote-1" })) as unknown as (typeof wakeupStudentService)["vote"],
   );
   stubMethod(
     wakeupStudentService,
     "unVote",
-    mock(async () => ({ id: "vote-1" })) as unknown as (typeof wakeupStudentService)["unVote"],
+    vi.fn(async () => ({ id: "vote-1" })) as unknown as (typeof wakeupStudentService)["unVote"],
   );
   stubMethod(
     wakeupManageService,
     "getList",
-    mock(async () => []) as unknown as (typeof wakeupManageService)["getList"],
+    vi.fn(async () => []) as unknown as (typeof wakeupManageService)["getList"],
   );
   stubMethod(
     wakeupManageService,
     "selectApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "wakeup-1",
     })) as unknown as (typeof wakeupManageService)["selectApply"],
   );
   stubMethod(
     wakeupManageService,
     "deleteApply",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "wakeup-1",
     })) as unknown as (typeof wakeupManageService)["deleteApply"],
   );
@@ -706,34 +706,34 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubProtoMethod(
     userManageService,
     "searchUser",
-    mock(async () => []) as unknown as (typeof userManageService)["searchUser"],
+    vi.fn(async () => []) as unknown as (typeof userManageService)["searchUser"],
   );
   stubProtoMethod(
     userManageService,
     "addPasswordLogin",
-    mock(async () => ({ ok: true })) as unknown as (typeof userManageService)["addPasswordLogin"],
+    vi.fn(async () => ({ ok: true })) as unknown as (typeof userManageService)["addPasswordLogin"],
   );
   stubProtoMethod(
     userManageService,
     "setPermission",
-    mock(async () => ({ id: "user-1" })) as unknown as (typeof userManageService)["setPermission"],
+    vi.fn(async () => ({ id: "user-1" })) as unknown as (typeof userManageService)["setPermission"],
   );
   stubProtoMethod(
     userManageService,
     "addPermission",
-    mock(async () => ({ id: "user-1" })) as unknown as (typeof userManageService)["addPermission"],
+    vi.fn(async () => ({ id: "user-1" })) as unknown as (typeof userManageService)["addPermission"],
   );
   stubProtoMethod(
     userManageService,
     "removePermission",
-    mock(async () => ({
+    vi.fn(async () => ({
       id: "user-1",
     })) as unknown as (typeof userManageService)["removePermission"],
   );
   stubProtoMethod(
     userManageService,
     "getUserDetail",
-    mock(async () => ({
+    vi.fn(async () => ({
       grade: 1,
       class: 1,
       gender: "male",
@@ -742,7 +742,7 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubProtoMethod(
     userManageService,
     "getRequiredUserDetail",
-    mock(async () => ({
+    vi.fn(async () => ({
       grade: 1,
       class: 1,
       gender: "male",
@@ -751,12 +751,12 @@ const stubDomainServices = (app: NestFastifyApplication) => {
   stubProtoMethod(
     userStudentService,
     "getTimeTable",
-    mock(async () => []) as unknown as (typeof userStudentService)["getTimeTable"],
+    vi.fn(async () => []) as unknown as (typeof userStudentService)["getTimeTable"],
   );
   stubProtoMethod(
     userStudentService,
     "getMyApplies",
-    mock(async () => ({
+    vi.fn(async () => ({
       stayApply: null,
       laundryApply: null,
     })) as unknown as (typeof userStudentService)["getMyApplies"],

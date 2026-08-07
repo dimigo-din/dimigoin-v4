@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
 import { HttpStatus } from "@nestjs/common";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { JWTResponse } from "#auth/auth.dto";
 import { AuthService } from "#auth/auth.service";
 import { E2EContext, setupE2EContext } from "#test/helpers";
@@ -41,7 +41,7 @@ describe("Auth E2E", () => {
 
   describe("POST /auth/login/google/callback", () => {
     test("should login via google callback", async () => {
-      authService.loginByGoogle = mock(
+      authService.loginByGoogle = vi.fn(
         async () => ctx.tokens.student,
       ) as unknown as typeof authService.loginByGoogle;
 
@@ -68,7 +68,7 @@ describe("Auth E2E", () => {
 
   describe("POST /auth/login/google/callback/app", () => {
     test("should login via google app callback", async () => {
-      authService.loginByGoogle = mock(
+      authService.loginByGoogle = vi.fn(
         async () => ctx.tokens.student,
       ) as unknown as typeof authService.loginByGoogle;
 
