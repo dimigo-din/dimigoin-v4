@@ -1,20 +1,23 @@
 FROM node:22-alpine AS build
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 WORKDIR /app
 
-COPY pnpm-lock.yaml package.json ./
+COPY package.json package-lock.json ./
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY apps/backoffice/package.json ./apps/backoffice/package.json
+COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
+COPY packages/biome-config/package.json ./packages/biome-config/package.json
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=npm,target=/root/.npm \
+    npm ci --workspace dimigoin-backoffice-v4
 
 COPY . .
-RUN pnpm run build
+RUN npm --workspace dimigoin-backoffice-v4 run build
 
 FROM nginx:1.27.2-alpine-slim
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY apps/backoffice/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/apps/backoffice/dist /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
