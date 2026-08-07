@@ -1,29 +1,32 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
-  "extends": ["./base.json"],
+  "$schema": "https://biomejs.dev/schemas/2.5.7/schema.json",
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 100,
+    "attributePosition": "auto",
+    "bracketSpacing": true
+  },
   "linter": {
     "rules": {
       "complexity": {
-        "noBannedTypes": "error",
-        "noUselessTypeConstraint": "error"
+        "noUselessTypeConstraint": "error",
+        "noBannedTypes": "error"
       },
       "correctness": {
         "noConstAssign": "error",
         "noGlobalObjectCalls": "error",
         "noInvalidConstructorSuper": "error",
         "noUndeclaredVariables": "error",
-        "noUnreachable": "error",
-        "noUnusedPrivateClassMembers": "off"
+        "noUnreachable": "error"
       },
       "style": {
-        "noCommonJs": "error",
-        "noNamespace": "error",
         "useArrayLiterals": "error",
         "useAsConstAssertion": "error",
-        "useBlockStatements": "error",
-        "useConst": "error",
-        "useImportType": "off",
-        "useTemplate": "error"
+        "useBlockStatements": "error"
       },
       "suspicious": {
         "noExplicitAny": "error",
@@ -31,18 +34,37 @@
         "noMisleadingInstantiator": "error",
         "noNonNullAssertedOptionalChain": "error",
         "noUnsafeDeclarationMerging": "error",
-        "noVar": "error",
         "useNamespaceKeyword": "error"
       }
     }
   },
   "javascript": {
     "formatter": {
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "all",
+      "semicolons": "always",
       "arrowParentheses": "always",
-      "attributePosition": "auto",
       "bracketSameLine": false,
-      "bracketSpacing": true,
-      "quoteProperties": "asNeeded"
+      "quoteStyle": "double",
+      "attributePosition": "auto",
+      "bracketSpacing": true
+    },
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    },
+    "globals": ["Bun"]
+  },
+  "overrides": [
+    {
+      "includes": ["*.ts", "*.tsx", "*.mts", "*.cts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "error"
+          }
+        }
+      }
     }
-  }
+  ]
 }

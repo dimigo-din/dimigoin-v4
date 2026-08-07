@@ -1,32 +1,3 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
-  "extends": ["./base.json"],
-  "linter": {
-    "domains": {
-      "react": "recommended"
-    },
-    "rules": {
-      "correctness": {
-        "noUnusedPrivateClassMembers": "off"
-      },
-      "style": {
-        "noCommonJs": "error",
-        "noNamespace": "error",
-        "useConst": "error",
-        "useImportType": "off",
-        "useTemplate": "error"
-      },
-      "suspicious": {
-        "noExplicitAny": "warn",
-        "noVar": "error"
-      }
-    }
-  },
-  "javascript": {
-    "formatter": {
-      "arrowParentheses": "always",
-      "bracketSameLine": false,
-      "quoteProperties": "asNeeded"
-    }
-  }
+  "$schema": "https://biomejs.dev/schemas/2.5.7/schema.json"
 }
