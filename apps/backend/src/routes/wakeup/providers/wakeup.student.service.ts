@@ -64,8 +64,8 @@ export class WakeupStudentService {
         gender: wakeupSongApplication.gender,
         userId: wakeupSongApplication.userId,
         deletedAt: wakeupSongApplication.deletedAt,
-        up: sql<number>`SUM(CASE WHEN ${wakeupSongVote.upvote} = true THEN 1 ELSE 0 END)::int`,
-        down: sql<number>`SUM(CASE WHEN ${wakeupSongVote.upvote} = false THEN 1 ELSE 0 END)::int`,
+        up: sql<number>`SUM(CASE WHEN ${wakeupSongVote.upvote} = true THEN 1 ELSE 0 END)`.mapWith(Number),
+        down: sql<number>`SUM(CASE WHEN ${wakeupSongVote.upvote} = false THEN 1 ELSE 0 END)`.mapWith(Number)
       })
       .from(wakeupSongApplication)
       .leftJoin(
