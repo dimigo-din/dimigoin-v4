@@ -9,10 +9,10 @@ COPY packages/typescript-config/package.json ./packages/typescript-config/packag
 COPY packages/biome-config/package.json ./packages/biome-config/package.json
 
 RUN --mount=type=cache,id=npm,target=/root/.npm \
-    npm ci --workspace dimigoin-backoffice-v4
+    npm ci --workspace @dimigoin-v4/backoffice
 
 COPY . .
-RUN npm --workspace dimigoin-backoffice-v4 run build
+RUN npm --workspace @dimigoin-v4/backoffice run build
 
 FROM nginx:1.27.2-alpine-slim
 
