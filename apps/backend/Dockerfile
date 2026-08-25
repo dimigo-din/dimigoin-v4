@@ -12,7 +12,7 @@ FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/package.json
-COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
+COPY packages/typescript-config ./packages/typescript-config
 COPY packages/biome-config/package.json ./packages/biome-config/package.json
 
 FROM deps AS build
@@ -34,6 +34,7 @@ COPY --chown=node:node --from=build /app/apps/backend/drizzle ./drizzle
 COPY --chown=node:node apps/backend/package.json apps/backend/tsconfig.json apps/backend/drizzle.config.ts .
 WORKDIR /app
 COPY --chown=node:node --from=prod-deps /app/node_modules ./node_modules
+COPY --chown=node:node --from=prod-deps /app/packages/typescript-config ./packages/typescript-config
 COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node apps/backend/entrypoint.sh ./entrypoint.sh
 RUN chmod 700 ./entrypoint.sh
