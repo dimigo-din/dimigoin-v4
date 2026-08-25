@@ -20,7 +20,7 @@ export const wakeupSongApplication = pgTable(
     video_title: varchar("video_title").notNull(),
     video_thumbnail: varchar("video_thumbnail").notNull(),
     video_channel: varchar("video_channel").notNull(),
-    week: varchar().notNull(),
+    month: varchar().notNull(),
     gender: genderEnum().notNull(),
     userId: uuid("userId")
       .notNull()
@@ -31,8 +31,8 @@ export const wakeupSongApplication = pgTable(
     deletedAt: timestamp("deletedAt", { mode: "date" }),
   },
   (t) => [
-    uniqueIndex("IDX_wakeup_video_week").on(t.video_id, t.week),
-    index("IDX_wakeup_week_gender").on(t.week, t.gender),
+    uniqueIndex("IDX_wakeup_video_month").on(t.video_id, t.month),
+    index("IDX_wakeup_month_gender").on(t.month, t.gender),
   ],
 );
 

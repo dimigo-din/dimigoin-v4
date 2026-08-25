@@ -1,5 +1,5 @@
 {
-  "name": "dimigoin-backoffice-v4",
+  "name": "@dimigoin-v4/backoffice",
   "private": true,
   "version": "4.0.0",
   "type": "module",

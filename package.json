@@ -37,14 +37,10 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
     "@dimigoin-v4/biome-config": "0.0.0",
-    "@swc/cli": "^0.8.1",
-    "@swc/core": "^1.15.21",
     "concurrently": "^9.2.1",
     "typescript": "~6.0.2"
   },
   "optionalDependencies": {
-    "@swc/core-linux-arm64-musl": "1.15.21",
-    "@swc/core-linux-x64-musl": "1.15.21",
     "lightningcss-linux-arm64-musl": "1.33.0",
     "lightningcss-linux-x64-musl": "1.33.0"
   }

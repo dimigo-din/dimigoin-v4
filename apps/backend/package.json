@@ -12,7 +12,7 @@
     "format": "biome format --write",
     "predev": "doppler run -- npm run db:migrate",
     "prestart:prod": "npm run db:migrate",
-    "dev": "doppler run -- tsx watch src/main.ts",
+    "dev": "doppler run -- nest start --watch -b swc",
     "start:prod": "node dist/cluster.js",
     "lint": "biome lint --write",
     "truncate": "tsx src/scripts/truncate-all.ts",
@@ -70,8 +70,13 @@
     "typescript": "^6.0.2",
     "@types/node": "^24.10.2",
     "@types/pg": "^8.16.0",
+    "chokidar": "^5.0.0",
     "tsx": "^4.20.6",
     "vitest": "^4.0.16"
+  },
+  "optionalDependencies": {
+    "@swc/core-linux-arm64-musl": "1.15.21",
+    "@swc/core-linux-x64-musl": "1.15.21"
   },
   "trustedDependencies": [
     "@nestjs/core",

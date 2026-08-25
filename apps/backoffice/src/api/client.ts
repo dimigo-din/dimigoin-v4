@@ -17,12 +17,7 @@ export function getInstance(): AxiosInstance {
     instance = axios.create({
       baseURL:
         location.host !== "localhost:5173" && location.host !== "localhost:5174"
-          ? `https://api.${location.host
-              .split(".")
-              .reverse()
-              .filter((_, i) => i <= 1)
-              .reverse()
-              .join(".")}`
+          ? `https://dev-api.dimigoin.io`
           : "http://localhost:3000",
       timeout: 5000,
       withCredentials: true,
