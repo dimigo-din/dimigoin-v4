@@ -1,6 +1,6 @@
 import { TZDate } from "@date-fns/tz";
 import { Inject, Injectable } from "@nestjs/common";
-import { format, startOfWeek } from "date-fns";
+import { format, startOfMonth } from "date-fns";
 import { eq } from "drizzle-orm";
 import { wakeupSongApplication, wakeupSongHistory, wakeupSongVote } from "#/db/schema";
 import { wakeupSongApplicationWithVotes, wakeupSongApplicationWithVotesAndUser } from "#/db/with";
@@ -15,11 +15,11 @@ export class WakeupManageService {
   constructor(@Inject(DRIZZLE) private readonly db: DrizzleDB) {}
 
   async getList() {
-    const week = format(startOfWeek(new TZDate(Date(), "Asia/Seoul")), "yyyy-MM-dd");
+    const month = format(startOfMonth(new TZDate(Date(), "Asia/Seoul")), "yyyy-MM-dd");
 
     return await this.db.query.wakeupSongApplication.findMany({
       where: {
-        RAW: (t, { and, eq, isNull }) => andWhere(and, eq(t.week, week), isNull(t.deletedAt)),
+        RAW: (t, { and, eq, isNull }) => andWhere(and, eq(t.month, month), isNull(t.deletedAt)),
       },
       with: wakeupSongApplicationWithVotesAndUser,
     });

@@ -45,7 +45,7 @@ export class ApplicationsResponseDTO {
   videoChannel: string;
 
   @ApiProperty()
-  week: string;
+  month: string;
 
   @ApiProperty()
   gender: string;

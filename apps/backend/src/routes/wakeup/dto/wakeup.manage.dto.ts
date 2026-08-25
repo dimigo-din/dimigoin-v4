@@ -32,9 +32,9 @@ export class WakeupSongListResponseDTO {
   @ApiProperty()
   video_channel: string;
 
-  /** yyyy-mm-dd (first day of week) */
+  /** yyyy-mm-dd (first day of month) */
   @ApiProperty()
-  week: string;
+  month: string;
 
   @ApiProperty()
   gender: Gender;

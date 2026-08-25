@@ -1,7 +1,7 @@
 import { youtube } from "@googleapis/youtube";
 import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { format, startOfWeek } from "date-fns";
+import { format, startOfMonth } from "date-fns";
 import { and, eq, sql } from "drizzle-orm";
 import { wakeupSongApplication, wakeupSongVote } from "#/db/schema";
 import { wakeupSongVoteWithApplication } from "#/db/with";
@@ -50,7 +50,7 @@ export class WakeupStudentService {
   }
 
   async getApplications(userJwt: UserJWT) {
-    const week = format(startOfWeek(new Date()), "yyyy-MM-dd");
+    const month = format(startOfMonth(new Date()), "yyyy-MM-dd");
     const { gender } = await this.userManageService.getRequiredUserDetail(userJwt.id);
 
     const results = await this.db
@@ -60,12 +60,12 @@ export class WakeupStudentService {
         video_title: wakeupSongApplication.video_title,
         video_thumbnail: wakeupSongApplication.video_thumbnail,
         video_channel: wakeupSongApplication.video_channel,
-        week: wakeupSongApplication.week,
+        month: wakeupSongApplication.month,
         gender: wakeupSongApplication.gender,
         userId: wakeupSongApplication.userId,
         deletedAt: wakeupSongApplication.deletedAt,
-        up: sql<number>`SUM(CASE WHEN ${wakeupSongVote.upvote} = true THEN 1 ELSE 0 END)::int`,
-        down: sql<number>`SUM(CASE WHEN ${wakeupSongVote.upvote} = false THEN 1 ELSE 0 END)::int`,
+        up: sql<number>`SUM(CASE WHEN ${wakeupSongVote.upvote} = true THEN 1 ELSE 0 END)`.mapWith(Number),
+        down: sql<number>`SUM(CASE WHEN ${wakeupSongVote.upvote} = false THEN 1 ELSE 0 END)`.mapWith(Number)
       })
       .from(wakeupSongApplication)
       .leftJoin(
@@ -74,7 +74,7 @@ export class WakeupStudentService {
       )
       .where(
         and(
-          eq(wakeupSongApplication.week, week),
+          eq(wakeupSongApplication.month, month),
           eq(wakeupSongApplication.gender, gender),
           notDeleted(wakeupSongApplication),
         ),
@@ -85,7 +85,7 @@ export class WakeupStudentService {
   }
 
   async registerVideo(userJwt: UserJWT, data: RegisterVideoDTO) {
-    const week = format(startOfWeek(new Date()), "yyyy-MM-dd");
+    const month = format(startOfMonth(new Date()), "yyyy-MM-dd");
     const { gender } = await this.userManageService.getRequiredUserDetail(userJwt.id);
 
     const exists = await this.db.query.wakeupSongApplication.findFirst({
@@ -94,7 +94,7 @@ export class WakeupStudentService {
           andWhere(
             and,
             eq(t.video_id, data.videoId),
-            eq(t.week, week),
+            eq(t.month, month),
             eq(t.gender, gender),
             isNull(t.deletedAt),
           ),
@@ -136,7 +136,7 @@ export class WakeupStudentService {
           video_title: videoData.snippet.title,
           video_thumbnail: videoData.snippet.thumbnails.default.url,
           video_channel: videoData.snippet.channelTitle,
-          week: week,
+          month: month,
           gender: gender,
           userId: dbUser.id,
         })
@@ -147,7 +147,7 @@ export class WakeupStudentService {
   }
 
   async getMyVotes(userJwt: UserJWT) {
-    const week = format(startOfWeek(new Date()), "yyyy-MM-dd");
+    const month = format(startOfMonth(new Date()), "yyyy-MM-dd");
     await findOrThrow(
       this.db.query.user.findFirst({ where: { RAW: (t, { eq }) => eq(t.id, userJwt.id) } }),
     );
@@ -160,7 +160,7 @@ export class WakeupStudentService {
         },
         with: wakeupSongVoteWithApplication,
       })
-      .then((votes) => votes.filter((v) => v.wakeupSongApplication?.week === week));
+      .then((votes) => votes.filter((v) => v.wakeupSongApplication?.month === month));
   }
 
   async vote(userJwt: UserJWT, data: VoteVideoDTO) {
