@@ -29,7 +29,7 @@ export class MealCronService {
   async fetchMealForDate(date: string) {
     let json: MealApiResponse;
     try {
-      const res = await fetch(`https://api.xn--rh3b.net/${date}`);
+      const res = await fetch(`https://api.xn--rh3b.net/kdmhs/${date}`);
       if (!res.ok) {
         return;
       }
