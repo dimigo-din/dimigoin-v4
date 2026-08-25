@@ -1,7 +1,15 @@
 import { format } from "date-fns";
 import { getInstance } from "./client.ts";
+import type { User } from "./user.ts";
 
 const client = getInstance();
+
+export type WakeupApplyUser = User & {
+  picture: string;
+  grade: number;
+  class: number;
+  gender: "male" | "female";
+};
 
 export type WakeupApply = {
   id: string;
@@ -9,8 +17,11 @@ export type WakeupApply = {
   video_title: string;
   video_thumbnail: string;
   video_channel: string;
-  week: string;
-  gender: string;
+  month: string;
+  week?: string;
+  gender: "male" | "female";
+  user_id: string;
+  user: WakeupApplyUser;
   wakeupSongVote: {
     id: string;
     upvote: boolean;
@@ -45,10 +56,10 @@ export const selectWakeupSong = async (id: string): Promise<WakeupApply> => {
 };
 
 export const deleteWakeupSong = async (id: string): Promise<WakeupApply> => {
-  return (await client.delete("/manage/wakeup?id=" + id)).data;
+  return (await client.delete(`/manage/wakeup?id=${id}`)).data;
 };
 
 export const getTodayWakeup = async (gender: "male" | "female"): Promise<WakeupHistory> => {
   const date = format(new Date(), "yyyy-MM-dd");
-  return (await client.get("/wakeup/history?date=" + date + "&gender=" + gender)).data;
+  return (await client.get(`/wakeup/history?date=${date}&gender=${gender}`)).data;
 };
