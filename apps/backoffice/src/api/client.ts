@@ -15,7 +15,7 @@ let instance: AxiosInstance;
 export function getInstance(): AxiosInstance {
   if (!instance) {
     instance = axios.create({
-      baseURL: process.env.API_URL,
+      baseURL: import.meta.env.VITE_API_URL,
       timeout: 5000,
       withCredentials: true,
     });
