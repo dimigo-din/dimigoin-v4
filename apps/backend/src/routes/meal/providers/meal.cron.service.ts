@@ -1,21 +1,15 @@
 import { TZDate } from "@date-fns/tz";
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { addDays, format } from "date-fns";
 import { and, eq } from "drizzle-orm";
 import { meal, mealTypeValues } from "#/db/schema";
 import { DRIZZLE, type DrizzleDB } from "$modules/drizzle.module";
-
-interface MealApiResponse {
-  data: {
-    breakfast: { regular: string[]; simple: string[]; image: string };
-    lunch: { regular: string[]; simple: string[]; image: string };
-    dinner: { regular: string[]; simple: string[]; image: string };
-  };
-}
+import { type MealApiResponse, normalizeMealApiData } from "../utils/meal-api.util";
 
 @Injectable()
 export class MealCronService {
+  private readonly logger = new Logger(MealCronService.name);
   constructor(@Inject(DRIZZLE) private readonly db: DrizzleDB) {}
 
   @Cron(CronExpression.EVERY_HOUR)
@@ -34,19 +28,21 @@ export class MealCronService {
         return;
       }
       json = (await res.json()) as MealApiResponse;
-    } catch {
+    } catch (err) {
+      this.logger.error(`error while fetching meal: ${err}`);
       return;
     }
 
-    if (!json.data) {
+    let meals: ReturnType<typeof normalizeMealApiData>;
+    try {
+      meals = normalizeMealApiData(json);
+    } catch (err) {
+      this.logger.error(`error while parsing meal: ${err}`);
       return;
     }
 
     for (const type of mealTypeValues) {
-      const source = json.data[type];
-      if (!source) {
-        continue;
-      }
+      const source = meals[type];
 
       const existing = await this.db.query.meal.findFirst({
         where: { RAW: (t, { and, eq }) => and(eq(t.date, date), eq(t.type, type))! },
@@ -56,18 +52,18 @@ export class MealCronService {
         await this.db
           .update(meal)
           .set({
-            regular: source.regular ?? [],
-            simple: source.simple ?? [],
-            image: source.image || null,
+            regular: source.regular,
+            simple: source.simple,
+            image: source.image,
           })
           .where(and(eq(meal.date, date), eq(meal.type, type)));
       } else {
         await this.db.insert(meal).values({
           date,
           type,
-          regular: source.regular ?? [],
-          simple: source.simple ?? [],
-          image: source.image || null,
+          regular: source.regular,
+          simple: source.simple,
+          image: source.image,
         });
       }
     }
