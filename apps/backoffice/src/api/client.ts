@@ -18,7 +18,7 @@ export function getInstance(): AxiosInstance {
       baseURL:
         location.host !== "localhost:5173" && location.host !== "localhost:5174"
           ? `https://dev-api.dimigoin.io`
-          : "http://localhost:3000",
+          : "http://api.dimigoin.io",
       timeout: 5000,
       withCredentials: true,
     });
