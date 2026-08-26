@@ -1,39 +1,24 @@
 import { mealTypeValues } from "#/db/schema";
 
 type MealType = (typeof mealTypeValues)[number];
+type MealGroupType = "regular" | "plus" | "simple";
 
-export interface MealApiResponse {
-  data?: {
-    meals?: RawMeal[];
-  };
-}
-
-interface RawMealGroup {
-  id?: "regular" | "plus" | "simple";
-  items?: string[];
-}
-
-interface RawMeal {
-  id?: MealType;
-  image?: string;
-  groups?: RawMealGroup[];
-}
-
-interface ValidMealGroup {
-  id: "regular" | "plus" | "simple";
+interface MealApiGroup {
+  id: MealGroupType;
   items: string[];
 }
 
-interface ValidMeal {
+interface MealApiMeal {
   id: MealType;
-  image: string;
-  groups: ValidMealGroup[];
+  image: string | null;
+  groups: MealApiGroup[];
 }
 
-interface ValidMealApiResponse {
-  data: {
-    meals: ValidMeal[];
+export interface MealApiResponse {
+  data?: {
+    meals?: MealApiMeal[];
   };
+  error?: string;
 }
 
 interface NormalizedMeal {
@@ -42,11 +27,22 @@ interface NormalizedMeal {
   image: string | null;
 }
 
+interface MealApiSuccessResponse extends MealApiResponse {
+  data: {
+    meals: MealApiMeal[];
+  };
+  error?: undefined;
+}
+
 const groupIds = ["regular", "plus", "simple"] as const;
 
-const validateMealApiData: (json: MealApiResponse) => asserts json is ValidMealApiResponse = (
+const validateMealApiData: (json: MealApiResponse) => asserts json is MealApiSuccessResponse = (
   json,
 ) => {
+  if (json.error) {
+    throw new Error(`Meal API error: ${json.error}`);
+  }
+
   if (!json.data || !Array.isArray(json.data.meals)) {
     throw new Error("Invalid meal API response: data.meals is required");
   }
@@ -56,7 +52,7 @@ const validateMealApiData: (json: MealApiResponse) => asserts json is ValidMealA
     if (!meal) {
       throw new Error(`Invalid meal API response: ${type} meal is required`);
     }
-    if (typeof meal.image !== "string") {
+    if (typeof meal.image !== "string" && meal.image !== null) {
       throw new Error(`Invalid meal API response: ${type}.image is required`);
     }
     if (!Array.isArray(meal.groups)) {
@@ -78,13 +74,13 @@ export const normalizeMealApiData = (json: MealApiResponse): Record<MealType, No
   const normalized = {} as Record<MealType, NormalizedMeal>;
 
   for (const source of json.data.meals) {
-    const findGroupItems = (groupId: RawMealGroup["id"]) =>
+    const findGroupItems = (groupId: MealGroupType) =>
       source.groups.find((group) => group.id === groupId)!.items;
 
     normalized[source.id] = {
       regular: findGroupItems("regular"),
       simple: findGroupItems("simple"),
-      image: source.image || null,
+      image: source.image,
     };
   }
 

@@ -5,7 +5,7 @@ import { addDays, format } from "date-fns";
 import { and, eq } from "drizzle-orm";
 import { meal, mealTypeValues } from "#/db/schema";
 import { DRIZZLE, type DrizzleDB } from "$modules/drizzle.module";
-import { type MealApiResponse, normalizeMealApiData } from "~meal/utils/meal-api.util";
+import { type MealApiResponse, normalizeMealApiData } from "../utils/meal-api.util";
 
 @Injectable()
 export class MealCronService {
@@ -33,7 +33,13 @@ export class MealCronService {
       return;
     }
 
-    const meals = normalizeMealApiData(json);
+    let meals: ReturnType<typeof normalizeMealApiData>;
+    try {
+      meals = normalizeMealApiData(json);
+    } catch (err) {
+      this.logger.error(`error while parsing meal: ${err}`);
+      return;
+    }
 
     for (const type of mealTypeValues) {
       const source = meals[type];
