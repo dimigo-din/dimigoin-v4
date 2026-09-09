@@ -1,6 +1,7 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { EmptyFilter } from "drizzle-orm";
 import { lostfoundComment, lostfoundImg, lostfoundReport } from "#/db/schema";
 import { lostfoundReportWithCommentImgUser, lostfoundReportWithImgUser } from "#/db/with";
 import { ErrorMsg } from "$mapper/error";
@@ -54,7 +55,7 @@ export class LostfoundStudentService {
     const status = data.status;
 
     const reports = await this.db.query.lostfoundReport.findMany({
-      where: status ? { RAW: (t, { eq }) => eq(t.status, status) } : undefined,
+      where: status ? { RAW: (t, { eq }) => eq(t.status, status) } : EmptyFilter,
       with: lostfoundReportWithImgUser,
       limit: 10,
       offset: offset,

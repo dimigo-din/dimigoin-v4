@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsIn, IsOptional, IsString, Matches } from "class-validator";
+import { IsIn, IsOptional, IsString, IsUUID, Matches } from "class-validator";
 import type { User } from "#/db/schema";
 import { type LostfoundStatus, LostfoundStatusValues } from "$mapper/types";
 import { FileDTO } from "~facility/dto/facility.dto";
@@ -34,8 +34,8 @@ export class ReportLostfoundDTO {
 }
 
 export class PostCommentDTO {
-  @ApiProperty()
-  @IsString()
+  @ApiProperty({ format: "uuid" })
+  @IsUUID()
   post: string;
 
   @ApiProperty()
@@ -56,8 +56,8 @@ export class GetReportListDTO {
 }
 
 export class LostfoundReportIdDTO {
-  @ApiProperty()
-  @IsString()
+  @ApiProperty({ format: "uuid" })
+  @IsUUID()
   id: string;
 }
 
