@@ -92,6 +92,14 @@ export class LostfoundReportListResDTO {
   user: User;
 }
 
+export class LostfoundCommentUserResDTO {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  name: string;
+}
+
 export class LostfoundCommentResDTO {
   @ApiProperty()
   id: string;
@@ -107,6 +115,9 @@ export class LostfoundCommentResDTO {
 
   @ApiProperty()
   userId: string;
+
+  @ApiProperty({ type: LostfoundCommentUserResDTO, nullable: true })
+  user: LostfoundCommentUserResDTO | null;
 }
 
 export class LostfoundReportResDTO extends LostfoundReportListResDTO {
