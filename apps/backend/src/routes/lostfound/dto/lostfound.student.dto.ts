@@ -16,6 +16,10 @@ export class ReportLostfoundDTO {
 
   @ApiProperty()
   @IsString()
+  status: LostfoundStatus;
+
+  @ApiProperty()
+  @IsString()
   body: string;
 
   @ApiProperty({

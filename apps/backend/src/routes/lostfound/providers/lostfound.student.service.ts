@@ -115,6 +115,7 @@ export class LostfoundStudentService {
         lastSeenPlace: data.last_seen_place,
         body: data.body,
         userId: dbUser.id,
+        status: data.status
       })
       .returning();
 
@@ -167,7 +168,7 @@ export class LostfoundStudentService {
 
     await this.db
       .update(lostfoundReport)
-      .set({ status: "found" })
+      .set({ status: "concluded" })
       .where(eq(lostfoundReport.id, report.id));
 
     const updated = await findOrThrow(
