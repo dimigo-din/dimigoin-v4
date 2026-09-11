@@ -133,7 +133,11 @@ export const lostfoundReportWithImgUser = {
 } as const;
 
 export const lostfoundReportWithCommentImgUser = {
-  comment: true,
+  // 댓글은 누가 썼는지 보여줘야 하고, 대화처럼 오래된 순으로 읽혀야 합니다.
+  comment: {
+    orderBy: { createdAt: "asc" },
+    with: { user: lostfoundPublicUser },
+  },
   img: true,
   user: lostfoundPublicUser,
 } as const;

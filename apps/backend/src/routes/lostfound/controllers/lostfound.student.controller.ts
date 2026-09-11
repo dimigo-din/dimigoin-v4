@@ -76,7 +76,7 @@ export class LostfoundStudentController {
   }
 
   @ApiOperation({
-    summary: "찾음 처리",
+    summary: "회수 처리",
     description: "작성자 본인이 자신의 분실물 제보를 found 상태로 변경합니다.",
   })
   @ApiResponseFormat({
