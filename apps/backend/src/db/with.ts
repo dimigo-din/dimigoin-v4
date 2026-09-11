@@ -115,6 +115,33 @@ export const facilityReportWithFileUser = {
   user: true,
 } as const;
 
+/** 작성자는 공개해도 되는 최소 정보만 내려줍니다. (이메일/권한 비트마스크 제외) */
+const lostfoundPublicUser = {
+  columns: {
+    id: true,
+    name: true,
+  },
+} as const;
+
+export const lostfoundReportWithUser = {
+  user: lostfoundPublicUser,
+} as const;
+
+export const lostfoundReportWithImgUser = {
+  img: true,
+  user: lostfoundPublicUser,
+} as const;
+
+export const lostfoundReportWithCommentImgUser = {
+  // 댓글은 누가 썼는지 보여줘야 하고, 대화처럼 오래된 순으로 읽혀야 합니다.
+  comment: {
+    orderBy: { createdAt: "asc" },
+    with: { user: lostfoundPublicUser },
+  },
+  img: true,
+  user: lostfoundPublicUser,
+} as const;
+
 export const staySeatPresetWithRange = {
   staySeatPresetRange: true,
 } as const;
