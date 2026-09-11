@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpStatus, Post, Query, UseInterceptors } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Patch,
+  Post,
+  Query,
+  UseInterceptors,
+} from "@nestjs/common";
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CustomJwtAuthGuard } from "#auth/guards";
 import { UseGuardsWithSwagger } from "#auth/guards/useGuards";
@@ -24,15 +33,16 @@ export class LostfoundStudentController {
 
   @ApiOperation({
     summary: "분실물 제보 목록",
-    description: "분실물 제보 목록을 불러옵니다. ",
+    description:
+      "분실물 제보 목록을 불러옵니다. mine=true 이면 본인이 작성한 제보만, mine=false 이면 본인 제보를 제외하고 내려줍니다.",
   })
   @ApiResponseFormat({
     status: HttpStatus.OK,
     type: [LostfoundReportListResDTO],
   })
   @Get("/list")
-  async getReportList(@Query() data: GetReportListDTO) {
-    return await this.lostfoundService.reportList(data);
+  async getReportList(@CurrentUser() user: UserJWT, @Query() data: GetReportListDTO) {
+    return await this.lostfoundService.reportList(user, data);
   }
 
   @ApiOperation({
@@ -50,7 +60,8 @@ export class LostfoundStudentController {
 
   @ApiOperation({
     summary: "분실물 제보",
-    description: "잃어버린 물건이나 주운 물건을 제보합니다. ",
+    description:
+      "잃어버린 물건을 제보합니다. 제보는 항상 lost 상태로 등록되며, 물건을 주운 사람은 댓글로 알려줍니다.",
   })
   @ApiResponseFormat({
     status: HttpStatus.OK,
@@ -62,6 +73,19 @@ export class LostfoundStudentController {
   @UseInterceptors(ImageUploadInterceptor)
   async report(@CurrentUser() user: UserJWT, @Body() data: ReportLostfoundDTO) {
     return await this.lostfoundService.createReport(user, data, data.file || []);
+  }
+
+  @ApiOperation({
+    summary: "찾음 처리",
+    description: "작성자 본인이 자신의 분실물 제보를 found 상태로 변경합니다.",
+  })
+  @ApiResponseFormat({
+    status: HttpStatus.OK,
+    type: LostfoundReportListResDTO,
+  })
+  @Patch("/found")
+  async markFound(@CurrentUser() user: UserJWT, @Body() data: LostfoundReportIdDTO) {
+    return await this.lostfoundService.markFound(user, data);
   }
 
   @ApiOperation({

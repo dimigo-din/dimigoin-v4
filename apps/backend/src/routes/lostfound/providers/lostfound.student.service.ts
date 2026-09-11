@@ -1,7 +1,7 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { EmptyFilter } from "drizzle-orm";
+import { EmptyFilter, eq, sql } from "drizzle-orm";
 import { lostfoundComment, lostfoundImg, lostfoundReport } from "#/db/schema";
 import { lostfoundReportWithCommentImgUser, lostfoundReportWithImgUser } from "#/db/with";
 import { ErrorMsg } from "$mapper/error";
@@ -10,6 +10,7 @@ import { CacheService } from "$modules/cache.module";
 import { DRIZZLE, type DrizzleDB } from "$modules/drizzle.module";
 import { R2 } from "$modules/r2.module";
 import { findOrThrow } from "$utils/findOrThrow.util";
+import { andWhere } from "$utils/where.util";
 import { FileDTO } from "~facility/dto/facility.dto";
 import {
   GetReportListDTO,
@@ -48,18 +49,37 @@ export class LostfoundStudentService {
     return { ...report, img: this.toImgLinks(report.img) };
   }
 
-  async reportList(data: GetReportListDTO) {
+  async reportList(userJwt: UserJWT, data: GetReportListDTO) {
     // page 는 쿼리스트링이라 문자열로 들어올 수 있고, 음수 offset 은 쿼리 자체를 실패시킵니다.
     const page = Math.floor(Number(data.page));
     const offset = (Number.isFinite(page) && page > 1 ? page - 1 : 0) * 10;
     const status = data.status;
+    // 쿼리스트링이라 boolean 이 아니라 문자열로 들어옵니다.
+    // "true" 는 내 제보만, "false" 는 내 제보를 뺀 나머지, 없으면 전체입니다.
+    const mine = data.mine;
 
     const reports = await this.db.query.lostfoundReport.findMany({
-      where: status ? { RAW: (t, { eq }) => eq(t.status, status) } : EmptyFilter,
+      where:
+        status || mine
+          ? {
+              RAW: (t, { and, eq, ne }) =>
+                andWhere(
+                  and,
+                  status ? eq(t.status, status) : undefined,
+                  mine === "true" ? eq(t.userId, userJwt.id) : undefined,
+                  mine === "false" ? ne(t.userId, userJwt.id) : undefined,
+                ),
+            }
+          : EmptyFilter,
       with: lostfoundReportWithImgUser,
       limit: 10,
       offset: offset,
-      orderBy: (lostfoundReport, { desc }) => desc(lostfoundReport.createdAt),
+      // 아직 찾는 중(lost)인 제보를 먼저, 그 안에서는 최신순으로 보여줍니다.
+      // enum 선언 순서에 기대지 않도록 상태를 직접 비교합니다.
+      orderBy: (lostfoundReport, { desc }) => [
+        desc(sql`${lostfoundReport.status} = 'lost'`),
+        desc(lostfoundReport.createdAt),
+      ],
     });
 
     return reports.map((r) => ({
@@ -91,7 +111,6 @@ export class LostfoundStudentService {
     const [report] = await this.db
       .insert(lostfoundReport)
       .values({
-        status: data.status,
         objectName: data.object_name,
         lastSeenPlace: data.last_seen_place,
         body: data.body,
@@ -132,6 +151,33 @@ export class LostfoundStudentService {
     );
 
     return this.withImgLinks(created);
+  }
+
+  /** 작성자 본인만 자신의 분실물을 찾았음(found)으로 표시할 수 있습니다. */
+  async markFound(userJwt: UserJWT, data: LostfoundReportIdDTO) {
+    const report = await findOrThrow(
+      this.db.query.lostfoundReport.findFirst({
+        where: { RAW: (t, { eq }) => eq(t.id, data.id) },
+      }),
+    );
+
+    if (report.userId !== userJwt.id) {
+      throw new HttpException(ErrorMsg.PermissionDenied_Resource(), HttpStatus.FORBIDDEN);
+    }
+
+    await this.db
+      .update(lostfoundReport)
+      .set({ status: "found" })
+      .where(eq(lostfoundReport.id, report.id));
+
+    const updated = await findOrThrow(
+      this.db.query.lostfoundReport.findFirst({
+        where: { RAW: (t, { eq }) => eq(t.id, report.id) },
+        with: lostfoundReportWithImgUser,
+      }),
+    );
+
+    return this.withImgLinks(updated);
   }
 
   async writeComment(userJwt: UserJWT, data: PostCommentDTO) {

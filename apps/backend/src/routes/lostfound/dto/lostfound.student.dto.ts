@@ -6,10 +6,6 @@ import { FileDTO } from "~facility/dto/facility.dto";
 import { LostfoundImgResDTO } from "./lostfound.dto";
 
 export class ReportLostfoundDTO {
-  @ApiProperty({ enum: LostfoundStatusValues })
-  @IsIn(LostfoundStatusValues)
-  status: LostfoundStatus;
-
   @ApiProperty()
   @IsString()
   object_name: string;
@@ -53,6 +49,15 @@ export class GetReportListDTO {
   @IsIn(LostfoundStatusValues)
   @IsOptional()
   status?: LostfoundStatus;
+
+  @ApiProperty({
+    required: false,
+    enum: ["true", "false"],
+    description: "true 이면 요청한 학생이 작성한 제보만, false 이면 그 외의 제보만 내려줍니다.",
+  })
+  @IsIn(["true", "false"])
+  @IsOptional()
+  mine?: string;
 }
 
 export class LostfoundReportIdDTO {
