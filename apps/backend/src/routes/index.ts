@@ -1,6 +1,7 @@
 export * from "./facility";
 export * from "./frigo";
 export * from "./laundry";
+export * from "./lostfound";
 export * from "./meal";
 export * from "./push";
 export * from "./stay";

@@ -115,6 +115,29 @@ export const facilityReportWithFileUser = {
   user: true,
 } as const;
 
+/** 작성자는 공개해도 되는 최소 정보만 내려줍니다. (이메일/권한 비트마스크 제외) */
+const lostfoundPublicUser = {
+  columns: {
+    id: true,
+    name: true,
+  },
+} as const;
+
+export const lostfoundReportWithUser = {
+  user: lostfoundPublicUser,
+} as const;
+
+export const lostfoundReportWithImgUser = {
+  img: true,
+  user: lostfoundPublicUser,
+} as const;
+
+export const lostfoundReportWithCommentImgUser = {
+  comment: true,
+  img: true,
+  user: lostfoundPublicUser,
+} as const;
+
 export const staySeatPresetWithRange = {
   staySeatPresetRange: true,
 } as const;

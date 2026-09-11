@@ -42,6 +42,7 @@
       "~facility/*": ["src/routes/facility/*"],
       "~frigo/*": ["src/routes/frigo/*"],
       "~laundry/*": ["src/routes/laundry/*"],
+      "~lostfound/*": ["src/routes/lostfound/*"],
       "~push/*": ["src/routes/push/*"],
       "~stay/*": ["src/routes/stay/*"],
       "~user/*": ["src/routes/user/*"],

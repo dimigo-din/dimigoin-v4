@@ -11,6 +11,8 @@ export const relations = defineRelations(schema, (r) => ({
     frigoApply: r.many.frigoApply(),
     facilityReport: r.many.facilityReport(),
     facilityReportComment: r.many.facilityReportComment(),
+    lostfoundReport: r.many.lostfoundReport(),
+    lostfoundComment: r.many.lostfoundComment(),
     wakeupSongApplication: r.many.wakeupSongApplication(),
     wakeupSongVote: r.many.wakeupSongVote(),
     pushSubscription: r.many.pushSubscription(),
@@ -192,6 +194,31 @@ export const relations = defineRelations(schema, (r) => ({
     }),
     user: r.one.user({
       from: r.facilityReportComment.userId,
+      to: r.user.id,
+    }),
+  },
+
+  lostfoundReport: {
+    comment: r.many.lostfoundComment(),
+    img: r.many.lostfoundImg(),
+    user: r.one.user({
+      from: r.lostfoundReport.userId,
+      to: r.user.id,
+    }),
+  },
+  lostfoundImg: {
+    parent: r.one.lostfoundReport({
+      from: r.lostfoundImg.parentId,
+      to: r.lostfoundReport.id,
+    }),
+  },
+  lostfoundComment: {
+    parent: r.one.lostfoundReport({
+      from: r.lostfoundComment.parentId,
+      to: r.lostfoundReport.id,
+    }),
+    user: r.one.user({
+      from: r.lostfoundComment.userId,
       to: r.user.id,
     }),
   },
