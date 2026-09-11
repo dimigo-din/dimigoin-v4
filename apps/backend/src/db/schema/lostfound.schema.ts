@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, pgEnum, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { LostfoundStatusValues } from "$mapper/types";
 import { user } from "./user.schema";
 
@@ -7,6 +7,7 @@ export const lostfoundStatusEnum = pgEnum("lost_found_status_enum", LostfoundSta
 export const lostfoundReport = pgTable("lostfound_report", {
   id: uuid().primaryKey().defaultRandom(),
   status: lostfoundStatusEnum().default(LostfoundStatusValues[0]).notNull(),
+  isConcluded: boolean("is_concluded").default(false).notNull(),
   objectName: varchar("object_name").notNull(),
   lastSeenPlace: varchar("last_seen_place").notNull(),
   body: varchar().notNull(),
