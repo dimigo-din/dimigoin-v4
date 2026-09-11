@@ -1,6 +1,6 @@
 {
   "extends": "@dimigoin-v4/typescript-config/backend",
   "compilerOptions": {
-    "baseURL": "."
+    "baseUrl": "."
   }
 }

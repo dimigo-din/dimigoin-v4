@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsIn, IsOptional, IsString, IsUUID, Matches } from "class-validator";
+import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, Matches } from "class-validator";
 import type { User } from "#/db/schema";
 import { type LostfoundStatus, LostfoundStatusValues } from "$mapper/types";
 import { FileDTO } from "~facility/dto/facility.dto";
@@ -62,6 +62,11 @@ export class GetReportListDTO {
   @IsIn(["true", "false"])
   @IsOptional()
   mine?: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  isConcluded?: boolean;
 }
 
 export class LostfoundReportIdDTO {
