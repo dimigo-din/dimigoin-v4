@@ -43,7 +43,7 @@ export type FrigoTiming = (typeof FrigoTimingValues)[number];
 export const FacilityReportTypeValues = ["suggest", "broken", "danger"] as const;
 export type FacilityReportType = (typeof FacilityReportTypeValues)[number];
 
-export const LostfoundStatusValues = ["lost", "found"] as const;
+export const LostfoundStatusValues = ["lost", "pickup"] as const;
 export type LostfoundStatus = (typeof LostfoundStatusValues)[number];
 
 /** 대기중, 검토중, 처리중, 완료, 무시됨, 실패 */

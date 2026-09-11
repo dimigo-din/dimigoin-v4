@@ -31,7 +31,7 @@ WORKDIR /app/apps/backend
 COPY --chown=node:node --from=build /app/apps/backend/dist ./dist
 COPY --chown=node:node --from=build /app/apps/backend/src ./src
 COPY --chown=node:node --from=build /app/apps/backend/drizzle ./drizzle
-COPY --chown=node:node apps/backend/package.json apps/backend/tsconfig.json apps/backend/drizzle.config.ts .
+COPY --chown=node:node apps/backend/package.json apps/backend/tsconfig.json apps/backend/drizzle.config.ts ./
 WORKDIR /app
 COPY --chown=node:node --from=prod-deps /app/node_modules ./node_modules
 COPY --chown=node:node --from=prod-deps /app/packages/typescript-config ./packages/typescript-config

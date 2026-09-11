@@ -60,7 +60,7 @@ export class LostfoundStudentService {
 
     const reports = await this.db.query.lostfoundReport.findMany({
       where:
-        status || mine
+        status || mine || data.isConcluded
           ? {
               RAW: (t, { and, eq, ne }) =>
                 andWhere(
@@ -68,6 +68,7 @@ export class LostfoundStudentService {
                   status ? eq(t.status, status) : undefined,
                   mine === "true" ? eq(t.userId, userJwt.id) : undefined,
                   mine === "false" ? ne(t.userId, userJwt.id) : undefined,
+                  data.isConcluded ? eq(t.isConcluded, data.isConcluded) : undefined
                 ),
             }
           : EmptyFilter,
@@ -115,6 +116,7 @@ export class LostfoundStudentService {
         lastSeenPlace: data.last_seen_place,
         body: data.body,
         userId: dbUser.id,
+        status: data.status
       })
       .returning();
 
@@ -167,7 +169,7 @@ export class LostfoundStudentService {
 
     await this.db
       .update(lostfoundReport)
-      .set({ status: "found" })
+      .set({ isConcluded: true })
       .where(eq(lostfoundReport.id, report.id));
 
     const updated = await findOrThrow(
