@@ -61,7 +61,7 @@ export class LostfoundStudentController {
   @ApiOperation({
     summary: "분실물 제보",
     description:
-      "잃어버린 물건을 제보합니다. 제보는 항상 lost 상태로 등록되며, 물건을 주운 사람은 댓글로 알려줍니다.",
+      "잃어버린 물건을 제보합니다. 상태는 lost, pickup, concluded가 있습니다.",
   })
   @ApiResponseFormat({
     status: HttpStatus.OK,
