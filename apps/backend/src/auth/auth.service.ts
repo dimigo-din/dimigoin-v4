@@ -81,8 +81,8 @@ export class AuthService {
       "https://www.googleapis.com/auth/userinfo.profile",
     ];
     return this.genURLOauthClient.generateAuthUrl({
-      response_type: "code",
       access_type: "online",
+      hd: "dimigo.hs.kr",
       prompt: "consent",
       scope: scopes,
       ...(redirect_uri ? { redirect_uri } : {}),
