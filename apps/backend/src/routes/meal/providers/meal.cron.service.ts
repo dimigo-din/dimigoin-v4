@@ -1,6 +1,7 @@
 import { TZDate } from "@date-fns/tz";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import cluster from "node:cluster";
 import { addDays, format } from "date-fns";
 import { and, eq } from "drizzle-orm";
 import { meal, mealTypeValues } from "#/db/schema";
@@ -14,6 +15,7 @@ export class MealCronService {
 
   @Cron(CronExpression.EVERY_HOUR)
   async fetchAndStoreMeals() {
+    if (!cluster.isPrimary) return;
     const today = new TZDate(new Date(), "Asia/Seoul");
     for (let i = 0; i < 7; i++) {
       await this.fetchMealForDate(format(addDays(today, i), "yyyy-MM-dd"));
