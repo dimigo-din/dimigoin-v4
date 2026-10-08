@@ -23,13 +23,16 @@ import {
   PostCommentDTO,
   ReportLostfoundDTO,
 } from "~lostfound/dto";
-import { LostfoundStudentService } from "~lostfound/providers";
+import { LostfoundStudentService, LostfoundManageService } from "~lostfound/providers";
 
 @ApiTags("Lostfound Student")
 @Controller("/student/lostfound")
 @UseGuardsWithSwagger(CustomJwtAuthGuard)
 export class LostfoundStudentController {
-  constructor(private readonly lostfoundService: LostfoundStudentService) {}
+  constructor(
+    private readonly lostfoundService: LostfoundStudentService,
+    private readonly lostfoundManageService: LostfoundManageService
+  ) {}
 
   @ApiOperation({
     summary: "분실물 제보 목록",
@@ -72,7 +75,9 @@ export class LostfoundStudentController {
   @Post("/")
   @UseInterceptors(ImageUploadInterceptor)
   async report(@CurrentUser() user: UserJWT, @Body() data: ReportLostfoundDTO) {
-    return await this.lostfoundService.createReport(user, data, data.file || []);
+    const rst = await this.lostfoundService.createReport(user, data, data.file || []);
+    await this.lostfoundManageService.sendWebhook(rst);
+    return rst;
   }
 
   @ApiOperation({

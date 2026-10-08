@@ -53,6 +53,7 @@ export class CacheService {
   private LOSTFOUND_REPORT_RATELIMIT_PREFIX = "lostfoundReportRatelimit_";
   private YOUTUBESEARCH_PREFIX = "youtubeSearch_";
   private NOTIFICATION_PREFIX = "notification_";
+  private LOSTFOUND_NOTIFICATION_LOCK_KEY = "lostfoundNotificationLock";
   private redis: Redis;
   private logger = new Logger(CacheService.name);
 
@@ -136,6 +137,34 @@ export class CacheService {
     const isThisCluster = randomUUID();
     await this.redis.set(key, isThisCluster, "EX", "3600", "NX");
     return (await this.redis.get(key)) !== isThisCluster;
+  }
+
+  async setLostfoundNotification(): Promise<string | null> {
+    const token = randomUUID();
+    const result = await this.redis.set(
+      this.LOSTFOUND_NOTIFICATION_LOCK_KEY,
+      token,
+      "PX",
+      1000 * 60 * 5,
+      "NX",
+    );
+
+    return result === "OK" ? token : null;
+  }
+
+  async releaseLostfoundNotification(token: string): Promise<boolean> {
+    const released = await this.redis.eval(
+      `if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("del", KEYS[1])
+      else
+        return 0
+      end`,
+      1,
+      this.LOSTFOUND_NOTIFICATION_LOCK_KEY,
+      token,
+    );
+
+    return released === 1;
   }
 }
 
