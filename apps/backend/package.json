@@ -1,6 +1,6 @@
 {
   "name": "@dimigoin-v4/backend",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "description": "dimigoin backend version 4",
   "author": "Yeonjun Lee <yeonfish6040@gmail.com>",
   "private": true,
