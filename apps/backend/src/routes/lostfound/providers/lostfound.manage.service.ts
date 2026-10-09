@@ -114,7 +114,7 @@ export class LostfoundManageService {
       title: `새 ${reportType}`,
       body: report.objectName,
       category: "school_information",
-      url: `/lostfound?id=${encodeURIComponent(report.id)}`,
+      url: `/lostfound/detail?id=${encodeURIComponent(report.id)}`,
       data: { reportId: report.id, status: report.status },
       actions: [],
       icon: "https://dimigoin.io/dimigoin.png",
