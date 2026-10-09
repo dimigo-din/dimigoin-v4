@@ -1,0 +1,1 @@
+ALTER TYPE "push_subject_identifier_enum" ADD VALUE 'lostfound_post';

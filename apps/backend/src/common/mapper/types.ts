@@ -62,6 +62,7 @@ export const PushNotificationSubjectIdentifierValues = [
   "laundry",
   "stay_apply_reminder",
   "wakeup_song",
+  "lostfound_post",
 ];
 export type PushNotificationSubjectIdentifier =
   (typeof PushNotificationSubjectIdentifierValues)[number];
@@ -71,6 +72,7 @@ export const PushNotificationSubject: Record<PushNotificationSubjectIdentifier, 
   laundry: "세탁 알림",
   stay_apply_reminder: "잔류 신청 알림",
   wakeup_song: "오늘의 기상곡 알림",
+  lostfound_post: "분실물 찾기 알림",
 };
 
 export type UserJWT = User & { sessionIdentifier?: string };

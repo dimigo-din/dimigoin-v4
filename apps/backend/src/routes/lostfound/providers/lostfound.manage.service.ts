@@ -113,7 +113,7 @@ export class LostfoundManageService {
     return await this.pushService.sendToAll({
       title: `새 ${reportType}`,
       body: report.objectName,
-      category: "school_information",
+      category: "lostfound_post",
       url: `/lostfound/detail?id=${encodeURIComponent(report.id)}`,
       data: { reportId: report.id, status: report.status },
       actions: [],

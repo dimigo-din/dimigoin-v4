@@ -231,7 +231,7 @@ export class LostfoundStudentService {
           to: recipients,
           title: "게시물에 새 댓글이 달렸습니다.",
           body: data.text,
-          category: "school_information",
+          category: "lostfound_post",
           url: `/lostfound/detail?id=${encodeURIComponent(data.post)}`,
           actions: [],
           icon: "https://dimigoin.io/dimigoin.png",
