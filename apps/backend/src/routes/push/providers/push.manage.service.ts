@@ -154,16 +154,6 @@ export class PushManageService {
 
   private async sendFCM(fcmToken: string, payload: PushNotificationPayloadDTO) {
     try {
-      const customData =
-        payload.data && typeof payload.data === "object"
-          ? Object.fromEntries(
-              Object.entries(payload.data).map(([key, value]) => [
-                key,
-                typeof value === "string" ? value : (JSON.stringify(value) ?? String(value)),
-              ]),
-            )
-          : {};
-
       const response = await this.fcmClient.projects.messages.send({
         parent: `projects/${this.projectId}`,
         requestBody: {
@@ -174,7 +164,7 @@ export class PushManageService {
               body: payload.body,
             },
             data: {
-              ...customData,
+              ...(payload.data ?? {}),
               body: payload.body,
               ...(payload.url ? { url: payload.url } : {}),
             },
