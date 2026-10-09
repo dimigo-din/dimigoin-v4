@@ -29,12 +29,12 @@ export class LostfoundManageController {
     }
 
     try {
-      if (await this.lostfoundService.isSent(id)) {
+      if (await this.lostfoundService.isPostNotificationSent(id)) {
         return "이미 전송된 알림입니다.";
       }
 
-      await this.lostfoundService.sendNotification(id);
-      await this.lostfoundService.markSent(id);
+      await this.lostfoundService.sendPostNotification(id);
+      await this.lostfoundService.markPostSent(id);
       return "성공적으로 알림을 전송했습니다!";
     } finally {
       await this.lostfoundService.release();

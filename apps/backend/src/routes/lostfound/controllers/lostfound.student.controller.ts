@@ -116,6 +116,8 @@ export class LostfoundStudentController {
   })
   @Post("/comment")
   async postComment(@CurrentUser() user: UserJWT, @Body() data: PostCommentDTO) {
-    return await this.lostfoundService.writeComment(user, data);
+    const comment = await this.lostfoundService.writeComment(user, data);
+    await this.lostfoundService.sendCommentNotification(user, data);
+    return comment;
   }
 }

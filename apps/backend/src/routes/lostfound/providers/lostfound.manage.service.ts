@@ -101,7 +101,7 @@ export class LostfoundManageService {
     return await this.cacheService.setLostfoundNotification();
   }
 
-  async sendNotification(id: string) {
+  async sendPostNotification(id: string) {
     const report = await findOrThrow(
       this.db.query.lostfoundReport.findFirst({
         where: { RAW: (t, { eq }) => eq(t.id, id) },
@@ -122,7 +122,7 @@ export class LostfoundManageService {
     });
   }
 
-  async isSent(id: string) {
+  async isPostNotificationSent(id: string) {
     const report = await findOrThrow(
       this.db.query.lostfoundReport.findFirst({
         columns: {
@@ -139,7 +139,7 @@ export class LostfoundManageService {
     return report.isSent;
   }
 
-  async markSent(id: string) {
+  async markPostSent(id: string) {
     return await findOrThrow(
       this.db
         .update(lostfoundReport)

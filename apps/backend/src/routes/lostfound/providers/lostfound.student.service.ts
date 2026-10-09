@@ -1,5 +1,5 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EmptyFilter, eq, sql } from "drizzle-orm";
 import { lostfoundComment, lostfoundImg, lostfoundReport } from "#/db/schema";
@@ -18,16 +18,20 @@ import {
   PostCommentDTO,
   ReportLostfoundDTO,
 } from "~lostfound/dto";
+import { PushManageService } from "~push/providers";
 
 type LostfoundImgRow = { id: string; name: string; location: string };
 
 @Injectable()
 export class LostfoundStudentService {
+  private readonly logger = new Logger(LostfoundStudentService.name);
+
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     @Inject(R2) private readonly r2: S3Client,
     private readonly config: ConfigService,
     private readonly cacheService: CacheService,
+    private readonly pushService: PushManageService,
   ) {}
 
   private get bucket() {
@@ -68,7 +72,7 @@ export class LostfoundStudentService {
                   status ? eq(t.status, status) : undefined,
                   mine === "true" ? eq(t.userId, userJwt.id) : undefined,
                   mine === "false" ? ne(t.userId, userJwt.id) : undefined,
-                  data.isConcluded ? eq(t.isConcluded, data.isConcluded) : undefined
+                  data.isConcluded ? eq(t.isConcluded, data.isConcluded) : undefined,
                 ),
             }
           : EmptyFilter,
@@ -116,7 +120,7 @@ export class LostfoundStudentService {
         lastSeenPlace: data.last_seen_place,
         body: data.body,
         userId: dbUser.id,
-        status: data.status
+        status: data.status,
       })
       .returning();
 
@@ -187,7 +191,7 @@ export class LostfoundStudentService {
       this.db.query.user.findFirst({ where: { RAW: (t, { eq }) => eq(t.id, userJwt.id) } }),
     );
 
-    await findOrThrow(
+    const report = await findOrThrow(
       this.db.query.lostfoundReport.findFirst({
         where: { RAW: (t, { eq }) => eq(t.id, data.post) },
       }),
@@ -207,5 +211,37 @@ export class LostfoundStudentService {
     }
 
     return comment;
+  }
+
+  async sendCommentNotification(user: UserJWT, data: PostCommentDTO) {
+    const previousComments = await this.db.query.lostfoundComment.findMany({
+      where: {
+        parentId: { eq: data.post }
+      },
+      columns: { userId: true },
+    });
+
+    const recipients = [
+      ...new Set([user.id, ...previousComments.map(({ userId }) => userId)]),
+    ].filter((userId) => userId !== user.id);
+
+    if (recipients.length > 0) {
+      try {
+        await this.pushService.sendToSpecificUsers({
+          to: recipients,
+          title: "게시물에 새 댓글이 달렸습니다.",
+          body: data.text,
+          category: "school_information",
+          url: `/lostfound/detail?id=${encodeURIComponent(data.post)}`,
+          actions: [],
+          icon: "https://dimigoin.io/dimigoin.png",
+          badge: "https://dimigoin.io/dimigoin.png",
+        });
+      } catch (error) {
+        this.logger.error(`Failed to send lostfound comment notification: `, error);
+      }
+    }
+
+
   }
 }
