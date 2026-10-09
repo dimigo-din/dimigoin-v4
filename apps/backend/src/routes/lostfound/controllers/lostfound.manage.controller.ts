@@ -23,16 +23,21 @@ export class LostfoundManageController {
   })
   @Get("/approve/:id")
   async approveNotification(@Param("id", ParseUUIDPipe) id: string) {
-    const lockToken = await this.lostfoundService.tryAcquire();
-    if (!lockToken) {
+    const acquired = await this.lostfoundService.tryAcquire();
+    if (!acquired) {
       return "다른 알림을 전송 중입니다. 잠시 후 다시 시도해주세요.";
     }
 
     try {
+      if (await this.lostfoundService.isSent(id)) {
+        return "이미 전송된 알림입니다.";
+      }
+
       await this.lostfoundService.sendNotification(id);
+      await this.lostfoundService.markSent(id);
       return "성공적으로 알림을 전송했습니다!";
     } finally {
-      await this.lostfoundService.release(lockToken);
+      await this.lostfoundService.release();
     }
   }
 }

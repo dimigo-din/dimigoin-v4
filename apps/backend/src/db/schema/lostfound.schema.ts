@@ -15,6 +15,7 @@ export const lostfoundReport = pgTable("lostfound_report", {
   userId: uuid("user_id")
     .notNull()
     .references(() => user.id, { onUpdate: "cascade", onDelete: "cascade" }),
+  isSent: boolean("is_sent").default(false).notNull(),
 });
 
 export const lostfoundImg = pgTable("lostfound_img", {

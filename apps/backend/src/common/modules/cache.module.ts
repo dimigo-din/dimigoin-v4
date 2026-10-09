@@ -139,32 +139,13 @@ export class CacheService {
     return (await this.redis.get(key)) !== isThisCluster;
   }
 
-  async setLostfoundNotification(): Promise<string | null> {
-    const token = randomUUID();
-    const result = await this.redis.set(
-      this.LOSTFOUND_NOTIFICATION_LOCK_KEY,
-      token,
-      "PX",
-      1000 * 60 * 5,
-      "NX",
-    );
-
-    return result === "OK" ? token : null;
+  async setLostfoundNotification(): Promise<boolean> {
+    const result = await this.redis.set(this.LOSTFOUND_NOTIFICATION_LOCK_KEY, "true", "NX");
+    return result === "OK";
   }
 
-  async releaseLostfoundNotification(token: string): Promise<boolean> {
-    const released = await this.redis.eval(
-      `if redis.call("get", KEYS[1]) == ARGV[1] then
-        return redis.call("del", KEYS[1])
-      else
-        return 0
-      end`,
-      1,
-      this.LOSTFOUND_NOTIFICATION_LOCK_KEY,
-      token,
-    );
-
-    return released === 1;
+  async releaseLostfoundNotification(): Promise<boolean> {
+    return (await this.redis.del(this.LOSTFOUND_NOTIFICATION_LOCK_KEY)) === 1;
   }
 }
 

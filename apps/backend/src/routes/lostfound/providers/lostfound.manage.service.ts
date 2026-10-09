@@ -1,6 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { eq } from "drizzle-orm";
 import { CacheService } from "#/common/modules/cache.module";
+import { lostfoundReport } from "#/db/schema";
 import type { LostfoundStatus } from "$mapper/types";
 import { DRIZZLE, type DrizzleDB } from "$modules/drizzle.module";
 import { findOrThrow } from "$utils/findOrThrow.util";
@@ -120,7 +122,35 @@ export class LostfoundManageService {
     });
   }
 
-  async release(token: string) {
-    return await this.cacheService.releaseLostfoundNotification(token);
+  async isSent(id: string) {
+    const report = await findOrThrow(
+      this.db.query.lostfoundReport.findFirst({
+        columns: {
+          isSent: true,
+        },
+        where: {
+          id: {
+            eq: id,
+          },
+        },
+      }),
+    );
+
+    return report.isSent;
+  }
+
+  async markSent(id: string) {
+    return await findOrThrow(
+      this.db
+        .update(lostfoundReport)
+        .set({ isSent: true })
+        .where(eq(lostfoundReport.id, id))
+        .returning({ id: lostfoundReport.id, isSent: lostfoundReport.isSent })
+        .then(([report]) => report),
+    );
+  }
+
+  async release() {
+    return await this.cacheService.releaseLostfoundNotification();
   }
 }
