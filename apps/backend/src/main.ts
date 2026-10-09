@@ -17,6 +17,7 @@ export async function bootstrap(isInit: boolean = true) {
     AppModule,
     new FastifyAdapter({
       bodyLimit: 50 * 1024 * 1024,
+      trustProxy: true,
     }),
     { logger },
   );

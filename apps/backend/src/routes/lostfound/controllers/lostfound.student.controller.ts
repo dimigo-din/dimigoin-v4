@@ -3,12 +3,15 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Logger,
   Patch,
   Post,
   Query,
+  Req,
   UseInterceptors,
 } from "@nestjs/common";
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
+import type { FastifyRequest } from "fastify";
 import { CustomJwtAuthGuard } from "#auth/guards";
 import { UseGuardsWithSwagger } from "#auth/guards/useGuards";
 import { CurrentUser } from "$decorators/user.decorator";
@@ -23,15 +26,17 @@ import {
   PostCommentDTO,
   ReportLostfoundDTO,
 } from "~lostfound/dto";
-import { LostfoundStudentService, LostfoundManageService } from "~lostfound/providers";
+import { LostfoundManageService, LostfoundStudentService } from "~lostfound/providers";
 
 @ApiTags("Lostfound Student")
 @Controller("/student/lostfound")
 @UseGuardsWithSwagger(CustomJwtAuthGuard)
 export class LostfoundStudentController {
+  private logger = new Logger(LostfoundStudentController.name);
+
   constructor(
     private readonly lostfoundService: LostfoundStudentService,
-    private readonly lostfoundManageService: LostfoundManageService
+    private readonly lostfoundManageService: LostfoundManageService,
   ) {}
 
   @ApiOperation({
@@ -63,8 +68,7 @@ export class LostfoundStudentController {
 
   @ApiOperation({
     summary: "분실물 제보",
-    description:
-      "잃어버린 물건을 제보합니다. 상태는 lost, pickup이 있습니다.",
+    description: "잃어버린 물건을 제보합니다. 상태는 lost, pickup이 있습니다.",
   })
   @ApiResponseFormat({
     status: HttpStatus.OK,
@@ -74,9 +78,19 @@ export class LostfoundStudentController {
   @ApiBody({ type: ReportLostfoundDTO })
   @Post("/")
   @UseInterceptors(ImageUploadInterceptor)
-  async report(@CurrentUser() user: UserJWT, @Body() data: ReportLostfoundDTO) {
+  async report(
+    @CurrentUser() user: UserJWT,
+    @Body() data: ReportLostfoundDTO,
+    @Req() request: FastifyRequest,
+  ) {
     const rst = await this.lostfoundService.createReport(user, data, data.file || []);
-    await this.lostfoundManageService.sendWebhook(rst);
+
+    try {
+      await this.lostfoundManageService.sendWebhook(rst, `${request.protocol}://${request.host}`);
+    } catch (err) {
+      this.logger.error("error sending discord webhook: ", err);
+    }
+
     return rst;
   }
 

@@ -26,11 +26,14 @@ export class LostfoundManageService {
     private readonly pushService: PushManageService,
   ) {}
 
-  async sendWebhook(data: LostfoundWebhookData) {
+  async sendWebhook(data: LostfoundWebhookData, apiOrigin: string) {
     const webhookUrl = this.config.getOrThrow<string>("LOSTFOUND_WEBHOOK_URL");
     const webhookEndpoint = new URL(webhookUrl);
     webhookEndpoint.searchParams.set("with_components", "true");
-    const apiPublicUrl = this.config.getOrThrow<string>("API_PUBLIC_URL").replace(/\/$/, "");
+    const approveUrl = new URL(
+      `/manage/lostfound/approve/${encodeURIComponent(data.id)}`,
+      apiOrigin,
+    );
     const isLost = data.status === "lost";
 
     return await fetch(webhookEndpoint, {
@@ -83,7 +86,7 @@ export class LostfoundManageService {
                 type: 2,
                 style: 5,
                 label: "알림 전송 승인",
-                url: `${apiPublicUrl}/manage/lostfound/approve/${encodeURIComponent(data.id)}`,
+                url: approveUrl.toString(),
               },
             ],
           },
