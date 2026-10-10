@@ -191,7 +191,7 @@ export class LostfoundStudentService {
       this.db.query.user.findFirst({ where: { RAW: (t, { eq }) => eq(t.id, userJwt.id) } }),
     );
 
-    const report = await findOrThrow(
+    await findOrThrow(
       this.db.query.lostfoundReport.findFirst({
         where: { RAW: (t, { eq }) => eq(t.id, data.post) },
       }),
@@ -214,6 +214,13 @@ export class LostfoundStudentService {
   }
 
   async sendCommentNotification(user: UserJWT, data: PostCommentDTO) {
+    const report = await findOrThrow(
+      this.db.query.lostfoundReport.findFirst({
+        where: { RAW: (t, { eq }) => eq(t.id, data.post) },
+        columns: { userId: true },
+      }),
+    );
+
     const previousComments = await this.db.query.lostfoundComment.findMany({
       where: {
         parentId: { eq: data.post }
@@ -222,7 +229,7 @@ export class LostfoundStudentService {
     });
 
     const recipients = [
-      ...new Set([user.id, ...previousComments.map(({ userId }) => userId)]),
+      ...new Set([report.userId, ...previousComments.map(({ userId }) => userId)]),
     ].filter((userId) => userId !== user.id);
 
     if (recipients.length > 0) {
@@ -241,7 +248,5 @@ export class LostfoundStudentService {
         this.logger.error(`Failed to send lostfound comment notification: `, error);
       }
     }
-
-
   }
 }
