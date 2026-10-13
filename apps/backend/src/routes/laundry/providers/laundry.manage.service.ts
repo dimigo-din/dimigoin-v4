@@ -391,6 +391,7 @@ export class LaundryManageService {
   private async laundryNotificationScheduler() {
     const now = new Date();
     const inFifteenMinutes = format(addMinutes(new TZDate(now, "Asia/Seoul"), 15), "HH:mm");
+    const afterFortyFiveMinutes = format(addMinutes(new TZDate(now, "Asia/Seoul"), -45), "HH:mm");
     const todayDate = format(new TZDate(now, "Asia/Seoul"), "yyyy-MM-dd");
 
     const applies = await this.db.query.laundryApply.findMany({
@@ -403,9 +404,10 @@ export class LaundryManageService {
     });
 
     // Filter by time in application code since we loaded the relation
-    const filteredApplies = applies.filter((a) => a.laundryTime?.time === inFifteenMinutes);
+    const scheduledApplies = applies.filter((a) => a.laundryTime?.time === inFifteenMinutes);
+    const endingApplies = applies.filter((a) => a.laundryTime?.time === afterFortyFiveMinutes);
 
-    for (const apply of filteredApplies) {
+    for (const apply of scheduledApplies) {
       if (await this.cacheService.isNotificationAlreadySent(apply.id)) {
         continue;
       }
@@ -419,6 +421,36 @@ export class LaundryManageService {
       const machineTypeParticle = apply.laundryMachine.type === "washer" ? "이" : "가";
       const title = `${machineType} 알림`;
       const body = `15분뒤 ${apply.laundryTime.time}에 ${machineType}${machineTypeParticle} 예약되어 있습니다. (${apply.laundryMachine.name})`;
+
+      const dto: PushNotificationToSpecificDTO = {
+        to: [applyUser.id],
+        title: title,
+        body: body,
+        category: "laundry",
+        url: "/laundry",
+        data: undefined,
+        actions: [],
+        icon: "https://dimigoin.io/dimigoin.png",
+        badge: "https://dimigoin.io/dimigoin.png",
+      };
+
+      await this.pushManageService.sendToSpecificUsers(dto);
+    }
+    
+    for (const apply of endingApplies) {
+      if (await this.cacheService.isNotificationAlreadySent(apply.id + ".ending")) {
+        continue;
+      }
+
+      if (!apply.user || !apply.laundryMachine || !apply.laundryTime) {
+        continue;
+      }
+
+      const applyUser = apply.user;
+      const machineType = apply.laundryMachine.type === "washer" ? "세탁" : "건조";
+      const machineTypeParticle = apply.laundryMachine.type === "washer" ? "이" : "가";
+      const title = `${machineType} 꺼내기 알림`;
+      const body = `${apply.laundryTime.time} ${machineType}${machineTypeParticle} 끝날 시간이에요. (${apply.laundryMachine.name})`;
 
       const dto: PushNotificationToSpecificDTO = {
         to: [applyUser.id],
