@@ -54,6 +54,7 @@ export class CacheService {
   private YOUTUBESEARCH_PREFIX = "youtubeSearch_";
   private NOTIFICATION_PREFIX = "notification_";
   private LOSTFOUND_NOTIFICATION_LOCK_KEY = "lostfoundNotificationLock";
+  private MEAL_CRON_LOCK_KEY = "mealcronlock";
   private redis: Redis;
   private logger = new Logger(CacheService.name);
 
@@ -137,6 +138,11 @@ export class CacheService {
     const isThisCluster = randomUUID();
     await this.redis.set(key, isThisCluster, "EX", "3600", "NX");
     return (await this.redis.get(key)) !== isThisCluster;
+  }
+
+  async isMealCronTriggered(): Promise<boolean> {
+    const result = await this.redis.set(this.MEAL_CRON_LOCK_KEY, "true", "EX", "300", "NX");
+    return result === "OK";
   }
 
   async setLostfoundNotification(): Promise<boolean> {
