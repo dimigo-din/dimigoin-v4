@@ -146,7 +146,7 @@ export class CacheService {
   }
 
   async setLostfoundNotification(): Promise<boolean> {
-    const result = await this.redis.set(this.LOSTFOUND_NOTIFICATION_LOCK_KEY, "true", "NX");
+    const result = await this.redis.set(this.LOSTFOUND_NOTIFICATION_LOCK_KEY, "true", "EX", "3600", "NX");
     return result === "OK";
   }
 
