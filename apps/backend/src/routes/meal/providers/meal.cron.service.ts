@@ -13,7 +13,7 @@ export class MealCronService {
   private readonly logger = new Logger(MealCronService.name);
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
-    private readonly cacheService: CacheService
+    private readonly cacheService: CacheService 
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
