@@ -14,6 +14,7 @@ import {
 import { laundryTimelineWithAssignIds } from "#/db/with";
 import { LaundrySchedulePriority } from "$mapper/constants";
 import { ErrorMsg } from "$mapper/error";
+import type { LaundryMachineType } from "$mapper/types";
 import { CacheService } from "$modules/cache.module";
 import { DRIZZLE, type DrizzleDB } from "$modules/drizzle.module";
 import { findOrThrow } from "$utils/findOrThrow.util";
@@ -31,6 +32,12 @@ import {
 import { LaundryTimelineScheduler } from "~laundry/schedulers/scheduler.interface";
 import { PushNotificationToSpecificDTO } from "~push/dto/push.manage.dto";
 import { PushManageService } from "~push/providers";
+
+// Minutes from the booked slot start until the "take out your laundry" notification
+const LAUNDRY_CYCLE_MINUTES: Record<LaundryMachineType, number> = {
+  washer: 105,
+  dryer: 45,
+};
 
 @Injectable()
 export class LaundryManageService {
@@ -389,13 +396,25 @@ export class LaundryManageService {
 
   @Cron(CronExpression.EVERY_MINUTE)
   private async laundryNotificationScheduler() {
-    const now = new Date();
-    const inFifteenMinutes = format(addMinutes(new TZDate(now, "Asia/Seoul"), 15), "HH:mm");
-    const afterFortyFiveMinutes = format(addMinutes(new TZDate(now, "Asia/Seoul"), -45), "HH:mm");
-    const todayDate = format(new TZDate(now, "Asia/Seoul"), "yyyy-MM-dd");
+    const nowKst = new TZDate(new Date(), "Asia/Seoul");
+    const toSlot = (date: Date) => ({
+      date: format(date, "yyyy-MM-dd"),
+      time: format(date, "HH:mm"),
+    });
+
+    // Slots starting in 15 minutes, and slots whose cycle (per machine type) is ending now.
+    // Slots are matched by date as well so that ones crossing midnight are not missed.
+    const scheduledSlot = toSlot(addMinutes(nowKst, 15));
+    const endingSlots: Record<LaundryMachineType, { date: string; time: string }> = {
+      washer: toSlot(addMinutes(nowKst, -LAUNDRY_CYCLE_MINUTES.washer)),
+      dryer: toSlot(addMinutes(nowKst, -LAUNDRY_CYCLE_MINUTES.dryer)),
+    };
+    const dates = [
+      ...new Set([scheduledSlot.date, ...Object.values(endingSlots).map((slot) => slot.date)]),
+    ];
 
     const applies = await this.db.query.laundryApply.findMany({
-      where: { RAW: (t, { eq }) => eq(t.date, todayDate) },
+      where: { RAW: (t, { inArray }) => inArray(t.date, dates) },
       with: {
         user: true,
         laundryMachine: true,
@@ -404,8 +423,17 @@ export class LaundryManageService {
     });
 
     // Filter by time in application code since we loaded the relation
-    const scheduledApplies = applies.filter((a) => a.laundryTime?.time === inFifteenMinutes);
-    const endingApplies = applies.filter((a) => a.laundryTime?.time === afterFortyFiveMinutes);
+    const scheduledApplies = applies.filter(
+      (a) => a.date === scheduledSlot.date && a.laundryTime?.time === scheduledSlot.time,
+    );
+    const endingApplies = applies.filter((a) => {
+      if (!a.laundryMachine) {
+        return false;
+      }
+
+      const slot = endingSlots[a.laundryMachine.type];
+      return a.date === slot.date && a.laundryTime?.time === slot.time;
+    });
 
     for (const apply of scheduledApplies) {
       if (await this.cacheService.isNotificationAlreadySent(apply.id)) {
@@ -436,9 +464,9 @@ export class LaundryManageService {
 
       await this.pushManageService.sendToSpecificUsers(dto);
     }
-    
+
     for (const apply of endingApplies) {
-      if (await this.cacheService.isNotificationAlreadySent(apply.id + ".ending")) {
+      if (await this.cacheService.isNotificationAlreadySent(`${apply.id}.ending`)) {
         continue;
       }
 
