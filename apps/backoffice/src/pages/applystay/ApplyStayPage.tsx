@@ -1042,43 +1042,38 @@ function ApplyStayPage() {
             <Button
               style={{ width: "27%", height: "100%", fontSize: "14px", padding: "0 8px" }}
               onClick={async () => {
+                const exportApplies = stayApplies?.filter(
+                  (apply) =>
+                    apply.id !== "new" &&
+                    (filterGender === undefined ||
+                      apply.user.gender === (filterGender ? "male" : "female")),
+                );
                 if (currentSelectedFileOutput === "") {
                   showToast("내보내기 형식을 선택하세요.", "danger");
                 } else if (currentSelectedFileOutput === "in") {
-                  if (stayApplies?.filter((apply) => apply.id != "new") && currentStay) {
+                  if (exportApplies && currentStay) {
                     await updateScreen();
-                    ExportStayAppliesToExcel(
-                      currentStay,
-                      stayApplies?.filter((apply) => apply.id != "new"),
-                    );
+                    ExportStayAppliesToExcel(currentStay, exportApplies);
                   } else showToast("내보낼 데이터가 없습니다.", "warning");
                 } else if (currentSelectedFileOutput === "out") {
-                  if (stayApplies?.filter((apply) => apply.id != "new") && currentStay) {
+                  if (exportApplies && currentStay) {
                     await updateScreen();
-                    stay2excel(
-                      stayApplies?.filter((apply) => apply.id != "new"),
-                      currentStay,
-                      { masking: true },
-                    );
+                    stay2excel(exportApplies, currentStay, { masking: true });
                   } else showToast("내보낼 데이터가 없습니다.", "warning");
                 } else if (currentSelectedFileOutput === "out_pdf") {
-                  if (stayApplies?.filter((apply) => apply.id != "new") && currentStay) {
+                  if (exportApplies && currentStay) {
                     await updateScreen();
                     stay2pdf(
-                      stayApplies?.filter((apply) => apply.id != "new"),
+                      exportApplies,
                       currentStay,
                       { masking: true },
                       `외부용 잔류 현황 (${currentStay.stay_from} ~ ${currentStay.stay_to}).pdf`,
                     );
                   } else showToast("내보낼 데이터가 없습니다.", "warning");
                 } else if (currentSelectedFileOutput === "dorm") {
-                  if (stayApplies?.filter((apply) => apply.id != "new") && currentStay) {
+                  if (exportApplies && currentStay) {
                     await updateScreen();
-                    stay2excel(
-                      stayApplies?.filter((apply) => apply.id != "new"),
-                      currentStay,
-                      { masking: false },
-                    );
+                    stay2excel(exportApplies, currentStay, { masking: false });
                   } else showToast("내보낼 데이터가 없습니다.", "warning");
                 }
               }}
