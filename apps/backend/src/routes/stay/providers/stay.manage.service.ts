@@ -60,6 +60,7 @@ import {
   UpdateStayScheduleDTO,
   UpdateStaySeatPresetDTO,
 } from "~stay/dto/stay.manage.dto";
+import { getOutingDate } from "./stay-outing-date";
 
 @Injectable()
 export class StayManageService {
@@ -431,6 +432,8 @@ export class StayManageService {
   }
 
   async createStayApply(data: CreateStayApplyDTO) {
+    for (const outing of data.outing) getOutingDate(outing);
+
     await findOrThrow(
       this.db.query.user.findFirst({ where: { RAW: (t, { eq }) => eq(t.id, data.user) } }),
     );
@@ -474,6 +477,7 @@ export class StayManageService {
     for (const outingData of data.outing) {
       outingValues.push({
         reason: outingData.reason,
+        outing_date: getOutingDate(outingData),
         breakfast_cancel: outingData.breakfast_cancel,
         lunch_cancel: outingData.lunch_cancel,
         dinner_cancel: outingData.dinner_cancel,
@@ -498,6 +502,8 @@ export class StayManageService {
   }
 
   async updateStayApply(data: UpdateStayApplyDTO) {
+    for (const outing of data.outing) getOutingDate(outing);
+
     const existing = await findOrThrow(
       this.db.query.stayApply.findFirst({ where: { RAW: (t, { eq }) => eq(t.id, data.id) } }),
     );
@@ -538,6 +544,7 @@ export class StayManageService {
     for (const outingData of data.outing) {
       outingValues.push({
         reason: outingData.reason,
+        outing_date: getOutingDate(outingData),
         breakfast_cancel: outingData.breakfast_cancel,
         lunch_cancel: outingData.lunch_cancel,
         dinner_cancel: outingData.dinner_cancel,

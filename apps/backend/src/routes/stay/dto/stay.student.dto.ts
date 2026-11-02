@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsBoolean, IsDateString, IsString, ValidateNested } from "class-validator";
+import { IsBoolean, IsDateString, IsOptional, IsString, ValidateIf, ValidateNested } from "class-validator";
 
 export class StayIdDTO {
   @ApiProperty()
@@ -25,13 +25,20 @@ export class OutingDTO {
   @IsBoolean()
   dinner_cancel: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ nullable: true })
+  @ValidateIf((outing: OutingDTO) => outing.from !== null || outing.to !== null)
   @IsDateString()
-  from: string;
+  from: string | null;
 
-  @ApiProperty()
+  @ApiProperty({ nullable: true })
+  @ValidateIf((outing: OutingDTO) => outing.from !== null || outing.to !== null)
   @IsDateString()
-  to: string;
+  to: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  @IsOptional()
+  @IsDateString()
+  outing_date?: string | null;
 }
 
 export class StayApplyIdDTO {

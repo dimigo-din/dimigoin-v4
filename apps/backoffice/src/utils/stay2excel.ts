@@ -115,7 +115,7 @@ function createSheetTitle(date: Date, grade?: number): string {
 }
 
 // ---- Time ----
-function hhmmKST(s?: string) {
+function hhmmKST(s?: string | null) {
   if (!s) return "";
   const d = new Date(s);
   if (isNaN(d.getTime())) return s;
@@ -137,7 +137,7 @@ function kstDayRange(d: Date) {
   }).format(d); // YYYY-MM-DD in KST
   const start = new Date(`${ymd}T00:00:00+09:00`);
   const end = new Date(`${ymd}T23:59:59.999+09:00`);
-  return { start, end };
+  return { day: ymd, start, end };
 }
 
 // ---- Grid styling ----
@@ -273,16 +273,21 @@ export function ExportStayAppliesToExcel(
 
         // Only approved outings that overlap the specific KST date
         const approved = (a.outing || []).filter((o) => o.approved);
-        const { start: dayStart, end: dayEnd } = kstDayRange(date);
+        const { day, start: dayStart, end: dayEnd } = kstDayRange(date);
         const dateSpecificOutings = approved.filter((o) => {
-          if (!o.from && !o.to) return false;
-          const from = o.from ? new Date(o.from) : new Date(o.to!);
-          const to = o.to ? new Date(o.to) : from;
+          if (o.from === null && o.to === null) return o.outing_date === day;
+          if (!o.from || !o.to) return false;
+          const from = new Date(o.from);
+          const to = new Date(o.to);
           // overlap with [dayStart, dayEnd] in KST
           return to >= dayStart && from <= dayEnd;
         });
         const outingText = dateSpecificOutings
-          .map((o) => `${hhmmKST(o.from)}~${hhmmKST(o.to)} (${o.reason ?? ""})`)
+          .map((o) =>
+            o.from === null && o.to === null
+              ? `하루종일 (${o.reason ?? ""})`
+              : `${hhmmKST(o.from)}~${hhmmKST(o.to)} (${o.reason ?? ""})`,
+          )
           .join(", ");
 
         const bCancel = dateSpecificOutings.some((o) => o.breakfast_cancel);

@@ -289,8 +289,9 @@ const OutingBox = styled.div`
   overflow-y: scroll;
 
   > div {
-    height: 15dvh;
+    height: 20dvh;
     width: 100%;
+    flex-shrink: 0;
 
     margin-top: 2dvh;
 
@@ -311,7 +312,8 @@ const OutingBox = styled.div`
       background-color: inherit;
     }
 
-    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+    input[type="date"]::-webkit-calendar-picker-indicator {
       filter: ${window.matchMedia("(prefers-color-scheme: dark)").matches ? "invert(1)" : "none"};
     }
 
@@ -394,6 +396,19 @@ const PresetBtn = styled.div`
   border-radius: 12px;
 
   margin-left: 3%;
+  cursor: pointer;
+
+  &[aria-pressed="true"] {
+    background-color: ${({ theme }) => theme.Colors.Solid.Indigo};
+    border-color: ${({ theme }) => theme.Colors.Solid.Indigo};
+    color: ${({ theme }) => theme.Colors.Solid.White};
+    font-weight: 700;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.Colors.Solid.Indigo};
+    outline-offset: 2px;
+  }
 `;
 
 const NoOuting = styled.div`
@@ -636,6 +651,26 @@ function ApplyStayPage() {
   const edit = () => {
     if (!selectedApply) {
       showToast("선택된 신청이 없습니다.", "danger");
+      return;
+    }
+
+    if (
+      selectedApply.outing.some(
+        (outing) => {
+          if (outing.from === null && outing.to === null) {
+            const date = outing.outing_date;
+            return (
+              !date ||
+              (currentStay !== null &&
+                (date < currentStay.stay_from.slice(0, 10) ||
+                  date > currentStay.stay_to.slice(0, 10)))
+            );
+          }
+          return !outing.from || !outing.to || Boolean(outing.outing_date);
+        },
+      )
+    ) {
+      showToast("외출 시작·종료 시간을 모두 입력하거나 하루종일 날짜를 선택하세요.", "warning");
       return;
     }
 
@@ -1265,32 +1300,76 @@ function ApplyStayPage() {
                         </DeleteBtn>
                       </InputRow>
                       <InputRow>
-                        <Input
-                          type={"datetime-local"}
-                          onInput={(e) => {
-                            outing.from = fromLocalInput((e.target as HTMLInputElement).value);
-                            modify();
-                          }}
-                          onFocus={(e) => (e.target as HTMLInputElement).showPicker?.()}
-                          value={toLocalInput(outing.from)}
-                          step={600}
-                          min="2025-01-01T00:00"
-                        />
-                        <p>부터&nbsp;&nbsp;</p>
-                        <Input
-                          type={"datetime-local"}
-                          onInput={(e) => {
-                            outing.to = fromLocalInput((e.target as HTMLInputElement).value);
-                            modify();
-                          }}
-                          onFocus={(e) => (e.target as HTMLInputElement).showPicker?.()}
-                          value={toLocalInput(outing.to)}
-                          step={600}
-                          min="2025-01-01T00:00"
-                        />
-                        <p>까지</p>
-
+                        {outing.from === null && outing.to === null ? (
+                          <>
+                            <p>하루종일 날짜&nbsp;&nbsp;</p>
+                            <Input
+                              type="date"
+                              value={outing.outing_date ?? ""}
+                              min={currentStay?.stay_from.slice(0, 10)}
+                              max={currentStay?.stay_to.slice(0, 10)}
+                              onInput={(e) => {
+                                outing.outing_date = (e.target as HTMLInputElement).value || null;
+                                modify();
+                              }}
+                              onFocus={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <Input
+                              type={"datetime-local"}
+                              onInput={(e) => {
+                                outing.from = fromLocalInput((e.target as HTMLInputElement).value);
+                                outing.outing_date = null;
+                                modify();
+                              }}
+                              onFocus={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                              value={toLocalInput(outing.from)}
+                              step={600}
+                              min="2025-01-01T00:00"
+                            />
+                            <p>부터&nbsp;&nbsp;</p>
+                            <Input
+                              type={"datetime-local"}
+                              onInput={(e) => {
+                                outing.to = fromLocalInput((e.target as HTMLInputElement).value);
+                                outing.outing_date = null;
+                                modify();
+                              }}
+                              onFocus={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                              value={toLocalInput(outing.to)}
+                              step={600}
+                              min="2025-01-01T00:00"
+                            />
+                            <p>까지</p>
+                          </>
+                        )}
+                      </InputRow>
+                      <InputRow>
                         <PresetBtn
+                          as="button"
+                          type="button"
+                          onClick={() => {
+                            const isAllDay = outing.from === null && outing.to === null;
+                            if (!isAllDay) {
+                              outing.outing_date = outing.from
+                                ? toLocalInput(outing.from).slice(0, 10)
+                                : null;
+                            } else {
+                              outing.outing_date = null;
+                            }
+                            outing.from = isAllDay ? "" : null;
+                            outing.to = isAllDay ? "" : null;
+                            modify();
+                          }}
+                          aria-pressed={outing.from === null && outing.to === null}
+                        >
+                          {outing.from === null && outing.to === null ? "하루종일 ✓" : "하루종일"}
+                        </PresetBtn>
+                        <PresetBtn
+                          as="button"
+                          type="button"
                           onClick={() => {
                             if (!currentStay) return;
                             const stayFromDate = new Date(currentStay.stay_from);
@@ -1322,6 +1401,7 @@ function ApplyStayPage() {
                             outing.reason = "자기계발외출";
                             outing.from = fromTime.toISOString();
                             outing.to = toTime.toISOString();
+                            outing.outing_date = null;
                             modify();
                           }}
                         >
@@ -1380,6 +1460,7 @@ function ApplyStayPage() {
                             dinner_cancel: false,
                             from: "",
                             to: "",
+                            outing_date: null,
                             approved: true,
                           },
                         ],

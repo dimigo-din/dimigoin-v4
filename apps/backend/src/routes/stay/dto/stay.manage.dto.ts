@@ -10,6 +10,7 @@ import {
   IsOptional,
   IsString,
   Matches,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 import {
@@ -227,13 +228,20 @@ export class OutingDTO {
   @IsBoolean()
   dinner_cancel: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ nullable: true })
+  @ValidateIf((outing: OutingDTO) => outing.from !== null || outing.to !== null)
   @IsDateString()
-  from: string;
+  from: string | null;
 
-  @ApiProperty()
+  @ApiProperty({ nullable: true })
+  @ValidateIf((outing: OutingDTO) => outing.from !== null || outing.to !== null)
   @IsDateString()
-  to: string;
+  to: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  @IsOptional()
+  @IsDateString()
+  outing_date?: string | null;
 
   @ApiProperty()
   @IsBoolean()

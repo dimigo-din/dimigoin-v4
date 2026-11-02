@@ -29,6 +29,29 @@ import {
   StayOutingIdDTO,
 } from "~stay/dto/stay.student.dto";
 import { UserManageService } from "~user/providers";
+import { getOutingDate } from "./stay-outing-date";
+
+function isSelfDevelopmentOuting(
+  outing: {
+    reason: string;
+    breakfast_cancel: boolean;
+    dinner_cancel: boolean;
+    from: string | null;
+    to: string | null;
+  },
+  outingDays: string[],
+): boolean {
+  const { from, to } = outing;
+  return (
+    from !== null &&
+    to !== null &&
+    outing.reason === "자기계발외출" &&
+    !outing.breakfast_cancel &&
+    !outing.dinner_cancel &&
+    outingDays.every((day) => isEqual(new Date(SelfDevelopment_Outing_From(day)), new Date(from))) &&
+    outingDays.every((day) => isEqual(new Date(SelfDevelopment_Outing_To(day)), new Date(to)))
+  );
+}
 
 @Injectable()
 export class StayStudentService {
@@ -82,6 +105,8 @@ export class StayStudentService {
   }
 
   async createStayApply(userJwt: UserJWT, data: CreateUserStayApplyDTO) {
+    for (const outing of data.outing) getOutingDate(outing);
+
     const userDetail = await this.userManageService.getRequiredUserDetail(userJwt.id);
 
     const now = new Date();
@@ -148,20 +173,11 @@ export class StayStudentService {
 
     const outingValues: (typeof stayOuting.$inferInsert)[] = [];
     for (const outingData of data.outing) {
-      const approved =
-        (outingData.reason === "자기계발외출" &&
-          !outingData.breakfast_cancel &&
-          !outingData.dinner_cancel &&
-          stayRow.outing_day.every((d: string) =>
-            isEqual(new Date(SelfDevelopment_Outing_From(d)), new Date(outingData.from)),
-          ) &&
-          stayRow.outing_day.every((d: string) =>
-            isEqual(new Date(SelfDevelopment_Outing_To(d)), new Date(outingData.to)),
-          )) ||
-        null;
+      const approved = isSelfDevelopmentOuting(outingData, stayRow.outing_day) || null;
 
       outingValues.push({
         reason: outingData.reason,
+        outing_date: getOutingDate(outingData),
         breakfast_cancel: outingData.breakfast_cancel,
         lunch_cancel: outingData.lunch_cancel,
         dinner_cancel: outingData.dinner_cancel,
@@ -185,6 +201,8 @@ export class StayStudentService {
   }
 
   async updateStayApply(userJwt: UserJWT, data: CreateUserStayApplyDTO) {
+    for (const outing of data.outing) getOutingDate(outing);
+
     const userDetail = await this.userManageService.getRequiredUserDetail(userJwt.id);
 
     const existing = await findOrThrow(
@@ -247,20 +265,11 @@ export class StayStudentService {
 
     const outingValues: (typeof stayOuting.$inferInsert)[] = [];
     for (const outingData of data.outing) {
-      const approved =
-        (outingData.reason === "자기계발외출" &&
-          !outingData.breakfast_cancel &&
-          !outingData.dinner_cancel &&
-          existing.stay.outing_day.every((d: string) =>
-            isEqual(new Date(SelfDevelopment_Outing_From(d)), new Date(outingData.from)),
-          ) &&
-          existing.stay.outing_day.every((d: string) =>
-            isEqual(new Date(SelfDevelopment_Outing_To(d)), new Date(outingData.to)),
-          )) ||
-        null;
+      const approved = isSelfDevelopmentOuting(outingData, existing.stay.outing_day) || null;
 
       outingValues.push({
         reason: outingData.reason,
+        outing_date: getOutingDate(outingData),
         breakfast_cancel: outingData.breakfast_cancel,
         lunch_cancel: outingData.lunch_cancel,
         dinner_cancel: outingData.dinner_cancel,
@@ -343,19 +352,9 @@ export class StayStudentService {
       throw new HttpException(ErrorMsg.PermissionDenied_Resource(), HttpStatus.FORBIDDEN);
     }
 
-    const approved =
-      (data.outing.reason === "자기계발외출" &&
-        !data.outing.breakfast_cancel &&
-        !data.outing.dinner_cancel &&
-        apply.stay.outing_day.every((d: string) =>
-          isEqual(new Date(SelfDevelopment_Outing_From(d)), new Date(data.outing.from)),
-        ) &&
-        apply.stay.outing_day.every((d: string) =>
-          isEqual(new Date(SelfDevelopment_Outing_To(d)), new Date(data.outing.to)),
-        )) ||
-      null;
+    const approved = isSelfDevelopmentOuting(data.outing, apply.stay.outing_day) || null;
 
-    if (data.outing.from >= data.outing.to) {
+    if (data.outing.from !== null && data.outing.to !== null && data.outing.from >= data.outing.to) {
       throw new HttpException(ErrorMsg.ProvidedTime_Invalid(), HttpStatus.BAD_REQUEST);
     }
 
@@ -363,6 +362,7 @@ export class StayStudentService {
       .insert(stayOuting)
       .values({
         reason: data.outing.reason,
+        outing_date: getOutingDate(data.outing),
         breakfast_cancel: data.outing.breakfast_cancel,
         lunch_cancel: data.outing.lunch_cancel,
         dinner_cancel: data.outing.dinner_cancel,
@@ -405,18 +405,9 @@ export class StayStudentService {
     }
 
     const approved =
-      (data.outing.reason === "자기계발외출" &&
-        !data.outing.breakfast_cancel &&
-        !data.outing.dinner_cancel &&
-        outing.stayApply.stay.outing_day.every((d: string) =>
-          isEqual(new Date(SelfDevelopment_Outing_From(d)), new Date(data.outing.from)),
-        ) &&
-        outing.stayApply.stay.outing_day.every((d: string) =>
-          isEqual(new Date(SelfDevelopment_Outing_To(d)), new Date(data.outing.to)),
-        )) ||
-      null;
+      isSelfDevelopmentOuting(data.outing, outing.stayApply.stay.outing_day) || null;
 
-    if (data.outing.from >= data.outing.to) {
+    if (data.outing.from !== null && data.outing.to !== null && data.outing.from >= data.outing.to) {
       throw new HttpException(ErrorMsg.ProvidedTime_Invalid(), HttpStatus.BAD_REQUEST);
     }
 
@@ -424,6 +415,7 @@ export class StayStudentService {
       .update(stayOuting)
       .set({
         reason: data.outing.reason,
+        outing_date: getOutingDate(data.outing),
         breakfast_cancel: data.outing.breakfast_cancel,
         lunch_cancel: data.outing.lunch_cancel,
         dinner_cancel: data.outing.dinner_cancel,

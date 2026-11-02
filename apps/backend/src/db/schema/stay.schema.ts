@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
   index,
   integer,
@@ -119,21 +121,29 @@ export const stayApply = pgTable(
   (t) => [uniqueIndex("UQ_stay_apply_stay_user").on(t.stayId, t.userId)],
 );
 
-export const stayOuting = pgTable("stay_outing", {
-  id: uuid().primaryKey().defaultRandom(),
-  reason: varchar().notNull(),
-  breakfast_cancel: boolean("breakfast_cancel").notNull(),
-  lunch_cancel: boolean("lunch_cancel").notNull(),
-  dinner_cancel: boolean("dinner_cancel").notNull(),
-  from: varchar().notNull(),
-  to: varchar().notNull(),
-  approved: boolean(),
-  audit_reason: varchar("audit_reason"),
-  stayApplyId: uuid("stayApplyId")
-    .notNull()
-    .references(() => stayApply.id, {
-      onUpdate: "cascade",
-      onDelete: "cascade",
-    }),
-  deletedAt: timestamp("deletedAt", { mode: "date" }),
-});
+export const stayOuting = pgTable(
+  "stay_outing",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    reason: varchar().notNull(),
+    breakfast_cancel: boolean("breakfast_cancel").notNull(),
+    lunch_cancel: boolean("lunch_cancel").notNull(),
+    dinner_cancel: boolean("dinner_cancel").notNull(),
+    from: varchar(),
+    to: varchar(),
+    outing_date: date("outing_date"),
+    approved: boolean(),
+    audit_reason: varchar("audit_reason"),
+    stayApplyId: uuid("stayApplyId")
+      .notNull()
+      .references(() => stayApply.id, {
+        onUpdate: "cascade",
+        onDelete: "cascade",
+      }),
+    deletedAt: timestamp("deletedAt", { mode: "date" }),
+  },
+  (t) => [
+    check("CK_stay_outing_from_to_pair", sql`(${t.from} IS NULL) = (${t.to} IS NULL)`),
+    check("CK_stay_outing_all_day_date", sql`(${t.from} IS NULL) = (${t.outing_date} IS NOT NULL)`),
+  ],
+);

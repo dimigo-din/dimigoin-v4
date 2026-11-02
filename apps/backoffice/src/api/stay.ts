@@ -92,8 +92,9 @@ export type StayApply = {
     breakfast_cancel: boolean;
     lunch_cancel: boolean;
     dinner_cancel: boolean;
-    from: string;
-    to: string;
+    from: string | null;
+    to: string | null;
+    outing_date: string | null;
     approved: boolean | null;
     audit_reason: string;
   }[];
@@ -109,8 +110,9 @@ export type StayApplyPayload = {
     breakfast_cancel: boolean;
     lunch_cancel: boolean;
     dinner_cancel: boolean;
-    from: string;
-    to: string;
+    from: string | null;
+    to: string | null;
+    outing_date?: string | null;
   }[];
 };
 
@@ -120,8 +122,9 @@ export type Outing = {
   breakfast_cancel: boolean;
   lunch_cancel: boolean;
   dinner_cancel: boolean;
-  from: string;
-  to: string;
+  from: string | null;
+  to: string | null;
+  outing_date: string | null;
   approved: boolean | null;
   audit_reason: string;
 };
