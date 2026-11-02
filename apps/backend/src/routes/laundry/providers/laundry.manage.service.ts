@@ -33,10 +33,10 @@ import { LaundryTimelineScheduler } from "~laundry/schedulers/scheduler.interfac
 import { PushNotificationToSpecificDTO } from "~push/dto/push.manage.dto";
 import { PushManageService } from "~push/providers";
 
-// Minutes from the booked slot start until the "take out your laundry" notification
+// Minutes from the booked slot start until the laundry done notification
 const LAUNDRY_CYCLE_MINUTES: Record<LaundryMachineType, number> = {
-  washer: 105,
-  dryer: 45,
+  washer: 45,
+  dryer: 105,
 };
 
 @Injectable()
