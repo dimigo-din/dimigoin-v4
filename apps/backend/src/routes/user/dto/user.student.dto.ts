@@ -19,10 +19,11 @@ export interface CachedTimetable {
 export interface ComciData {
   분리?: number;
   강의실?: number;
+  변경알림?: number;
   동시그룹?: number[][];
-  자료180?: ComciCell[][][][];
-  자료156?: ComciCell[][][][];
-  자료164?: ComciCell[][][][];
-  자료122?: string[];
-  자료194?: string[];
+  자료102?: ComciCell[][][][];
+  자료160?: ComciCell[][][][];
+  자료184?: ComciCell[][][][];
+  자료107?: string[];
+  자료182?: string[];
 }

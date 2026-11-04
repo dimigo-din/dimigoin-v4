@@ -57,7 +57,7 @@ export class UserStudentService {
     if (cached) {
       return cached;
     } else {
-      const res = await fetch("http://comci.net:4082/161150?ODY4NjZfMjkxNzVfMF8x");
+      const res = await fetch("http://comci.net:4082/475358?NTkyNjJfMjkxNzVfMF8x");
       const text = await res.text();
       data = JSON.parse(text.replace(/\0/g, "")) as ComciData;
     }
@@ -149,7 +149,7 @@ export class UserStudentService {
             const grade2 = Math.floor(classroom / 100);
             const class2 = classroom - grade2 * 100;
 
-            const rawValue = rmBrackets(dataObj.자료156?.[grade2]?.[class2]?.[dayOfWeek]?.[period]);
+            const rawValue = rmBrackets(dataObj.자료160?.[grade2]?.[class2]?.[dayOfWeek]?.[period]);
             if (!Number.isFinite(rawValue)) {
               check = 0;
               break;
@@ -200,12 +200,13 @@ export class UserStudentService {
 
     for (let day = 1; day <= MAX_D; day++) {
       for (let per = 1; per <= MAX_P; per++) {
-        const originalData = safeData(data.자료180?.[grade]?.[klass]?.[day]?.[per]);
-        const dailyData = rmBrackets(data.자료156?.[grade]?.[klass]?.[day]?.[per]);
+        const originalData = safeData(data.자료102?.[grade]?.[klass]?.[day]?.[per]);
+        const rawDailyData = data.자료160?.[grade]?.[klass]?.[day]?.[per];
+        const dailyData = rmBrackets(rawDailyData);
 
         let classroom = "";
         if (data.강의실 === 1) {
-          const roomInfo = data.자료164?.[grade]?.[klass]?.[day]?.[per];
+          const roomInfo = data.자료184?.[grade]?.[klass]?.[day]?.[per];
           if (typeof roomInfo === "string" && roomInfo.indexOf("_") > 0) {
             const roomParts = roomInfo.split("_");
             const roomNumber = Number(roomParts[0]);
@@ -218,7 +219,10 @@ export class UserStudentService {
           }
         }
 
-        const isTemp = originalData !== dailyData;
+        const isTemp =
+          data.변경알림 === 1
+            ? typeof rawDailyData === "string" && rawDailyData.startsWith(">")
+            : originalData !== dailyData;
 
         const row = table[day - 1];
         if (!row) {
@@ -235,8 +239,8 @@ export class UserStudentService {
           timePrefix = mTime(subjectIndex, DIV);
           subjectIndex = subjectIndex % DIV;
 
-          if (data.자료122 && teacherIndex < data.자료122.length) {
-            teacherName = data.자료122[teacherIndex]?.replace("*", "").slice(0, 2) ?? "";
+          if (data.자료107 && teacherIndex < data.자료107.length) {
+            teacherName = data.자료107[teacherIndex]?.replace("*", "").slice(0, 2) ?? "";
           }
 
           if (timePrefix === "") {
@@ -245,7 +249,7 @@ export class UserStudentService {
             groupPrefix = timePrefix;
           }
 
-          const subject = data.자료194?.[subjectIndex] ?? "";
+          const subject = data.자료182?.[subjectIndex] ?? "";
           const teacherDisplay = teacherName;
 
           let result = groupPrefix + subject;
