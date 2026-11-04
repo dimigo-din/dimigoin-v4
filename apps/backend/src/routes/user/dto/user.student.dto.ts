@@ -20,9 +20,9 @@ export interface ComciData {
   분리?: number;
   강의실?: number;
   동시그룹?: number[][];
-  자료481?: ComciCell[][][][];
-  자료147?: ComciCell[][][][];
-  자료245?: ComciCell[][][][];
-  자료446?: string[];
-  자료492?: string[];
+  자료180?: ComciCell[][][][];
+  자료156?: ComciCell[][][][];
+  자료164?: ComciCell[][][][];
+  자료122?: string[];
+  자료194?: string[];
 }
