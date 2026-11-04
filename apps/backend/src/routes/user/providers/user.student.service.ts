@@ -10,6 +10,59 @@ import { andWhere } from "$utils/where.util";
 import type { ComciData } from "~user/dto";
 import { UserManageService } from "./user.manage.service";
 
+const COMCI_BASE = "http://comci.net:4082";
+const SCHOOL_NAME = "한국디"; // 아~ 한국디~
+const SCHOOL_NAME_EUC_KR = "%C7%D1%B1%B9%B5%F0%C1%F6%C5%D0%B9%CC%B5%F0%BE%EE%B0%ED%B5%EE%C7%D0";
+
+const fetchComciJson = async <T>(path: string): Promise<T> => {
+  const text = await (await fetch(`${COMCI_BASE}/${path}`)).text();
+  return JSON.parse(text.replace(/\0/g, "")) as T;
+};
+
+const capture = (source: string, pattern: RegExp) => source.match(pattern)![1]!;
+
+const decodeComciScript = (page: string) =>
+  Array.from(page.matchAll(/\[\[0,"([0-9A-F]+)"\]\],(\d+)\)/g), ([, hex, seed]) => {
+    const encoded = hex ?? "";
+    let decoded = "";
+    for (let i = 0; i < encoded.length; i += 4) {
+      decoded += String.fromCharCode(
+        Number.parseInt(encoded.slice(i, i + 4), 16) ^ ((Number(seed) + (i / 4) * 13) & 255),
+      );
+    }
+    return decoded;
+  }).join("\n");
+
+const getComciData = async (): Promise<ComciData> => {
+  const page = await (await fetch(`${COMCI_BASE}/st`)).text();
+  const script = decodeComciScript(page);
+
+  const searchPath = capture(script, /function school_ra\(sc\)\{\$\.ajax\(\{ url:'\.\/(\d+)\?/);
+  const searchKey = capture(
+    script,
+    /function school_ra\(sc\)\{\$\.ajax\(\{ url:'\.\/\d+\?([^']+)'\+sc/,
+  );
+  const search = await fetchComciJson<{ 학교검색: (string | number)[][] }>(
+    `${searchPath}?${searchKey}${SCHOOL_NAME_EUC_KR}`,
+  );
+  const schoolCode = search.학교검색.find((entry) => String(entry[2]).startsWith(SCHOOL_NAME))![3];
+
+  const requestPrefix = capture(script, /sc_data\('(\d+_)',sc,1,'0'\)/);
+  const timetablePath = capture(script, /var sc3='\.\/(\d+)\?'\+btoa/);
+  const request = Buffer.from(`${requestPrefix}${schoolCode}_0_1`).toString("base64");
+  const raw = await fetchComciJson<Record<string, unknown>>(`${timetablePath}?${request}`);
+  const field = (pattern: RegExp) => raw[`자료${capture(script, pattern)}`];
+
+  return {
+    ...(raw as ComciData),
+    originalTimetable: field(/원자료=Q자료\(자료\.자료(\d+)\[/) as ComciData["originalTimetable"],
+    dailyTimetable: field(/일일자료=Q자료\(자료\.자료(\d+)\[/) as ComciData["dailyTimetable"],
+    roomData: field(/var m3=자료\.자료(\d+)\[/) as ComciData["roomData"],
+    teacherNames: field(/성명=Q성명\(자료\.자료(\d+)\[th\]\)/) as ComciData["teacherNames"],
+    subjectNames: field(/과목명=Q과목명\(자료\.자료(\d+)\[sb\]\)/) as ComciData["subjectNames"],
+  };
+};
+
 @Injectable()
 export class UserStudentService {
   constructor(
@@ -57,9 +110,7 @@ export class UserStudentService {
     if (cached) {
       return cached;
     } else {
-      const res = await fetch("http://comci.net:4082/475358?NTkyNjJfMjkxNzVfMF8x");
-      const text = await res.text();
-      data = JSON.parse(text.replace(/\0/g, "")) as ComciData;
+      data = await getComciData();
     }
 
     const DIV = data.분리 ?? 100;
@@ -149,7 +200,9 @@ export class UserStudentService {
             const grade2 = Math.floor(classroom / 100);
             const class2 = classroom - grade2 * 100;
 
-            const rawValue = rmBrackets(dataObj.자료160?.[grade2]?.[class2]?.[dayOfWeek]?.[period]);
+            const rawValue = rmBrackets(
+              dataObj.dailyTimetable?.[grade2]?.[class2]?.[dayOfWeek]?.[period],
+            );
             if (!Number.isFinite(rawValue)) {
               check = 0;
               break;
@@ -200,13 +253,13 @@ export class UserStudentService {
 
     for (let day = 1; day <= MAX_D; day++) {
       for (let per = 1; per <= MAX_P; per++) {
-        const originalData = safeData(data.자료102?.[grade]?.[klass]?.[day]?.[per]);
-        const rawDailyData = data.자료160?.[grade]?.[klass]?.[day]?.[per];
+        const originalData = safeData(data.originalTimetable?.[grade]?.[klass]?.[day]?.[per]);
+        const rawDailyData = data.dailyTimetable?.[grade]?.[klass]?.[day]?.[per];
         const dailyData = rmBrackets(rawDailyData);
 
         let classroom = "";
         if (data.강의실 === 1) {
-          const roomInfo = data.자료184?.[grade]?.[klass]?.[day]?.[per];
+          const roomInfo = data.roomData?.[grade]?.[klass]?.[day]?.[per];
           if (typeof roomInfo === "string" && roomInfo.indexOf("_") > 0) {
             const roomParts = roomInfo.split("_");
             const roomNumber = Number(roomParts[0]);
@@ -239,8 +292,8 @@ export class UserStudentService {
           timePrefix = mTime(subjectIndex, DIV);
           subjectIndex = subjectIndex % DIV;
 
-          if (data.자료107 && teacherIndex < data.자료107.length) {
-            teacherName = data.자료107[teacherIndex]?.replace("*", "").slice(0, 2) ?? "";
+          if (data.teacherNames && teacherIndex < data.teacherNames.length) {
+            teacherName = data.teacherNames[teacherIndex]?.replace("*", "").slice(0, 2) ?? "";
           }
 
           if (timePrefix === "") {
@@ -249,7 +302,7 @@ export class UserStudentService {
             groupPrefix = timePrefix;
           }
 
-          const subject = data.자료182?.[subjectIndex] ?? "";
+          const subject = data.subjectNames?.[subjectIndex] ?? "";
           const teacherDisplay = teacherName;
 
           let result = groupPrefix + subject;
