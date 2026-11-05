@@ -45,18 +45,30 @@ const getComciData = async (): Promise<ComciData> => {
   const search = await fetchComciJson<{ 학교검색: (string | number)[][] }>(
     `${searchPath}?${searchKey}${SCHOOL_NAME_EUC_KR}`,
   );
-  const schoolCode = search.학교검색.find((entry) => String(entry[2]).startsWith(SCHOOL_NAME))![3];
+  const school = search.학교검색.find((entry) => String(entry[2]).startsWith(SCHOOL_NAME));
+  if (!school) {
+    throw new Error(`Comci school not found: ${SCHOOL_NAME}`);
+  }
+  const schoolCodeDivisor = Number(capture(script, /학교검색\[i\]\[0\]\/(\d+)\)\+2/));
+  const schoolCode = school[Math.floor(Number(school[0]) / schoolCodeDivisor) + 2];
+  if (!schoolCode) {
+    throw new Error(`Comci school code not found: ${SCHOOL_NAME}`);
+  }
 
   const requestPrefix = capture(script, /sc_data\('(\d+_)',sc,1,'0'\)/);
   const timetablePath = capture(script, /var sc3='\.\/(\d+)\?'\+btoa/);
   const request = Buffer.from(`${requestPrefix}${schoolCode}_0_1`).toString("base64");
   const raw = await fetchComciJson<Record<string, unknown>>(`${timetablePath}?${request}`);
   const field = (pattern: RegExp) => raw[`자료${capture(script, pattern)}`];
+  const dailyTimetable = field(/일일자료=Q자료\(자료\.자료(\d+)\[/);
+  if (!Array.isArray(dailyTimetable)) {
+    throw new Error(`Comci returned no timetable for ${SCHOOL_NAME}`);
+  }
 
   return {
     ...(raw as ComciData),
     originalTimetable: field(/원자료=Q자료\(자료\.자료(\d+)\[/) as ComciData["originalTimetable"],
-    dailyTimetable: field(/일일자료=Q자료\(자료\.자료(\d+)\[/) as ComciData["dailyTimetable"],
+    dailyTimetable: dailyTimetable as ComciData["dailyTimetable"],
     roomData: field(/var m3=자료\.자료(\d+)\[/) as ComciData["roomData"],
     teacherNames: field(/성명=Q성명\(자료\.자료(\d+)\[th\]\)/) as ComciData["teacherNames"],
     subjectNames: field(/과목명=Q과목명\(자료\.자료(\d+)\[sb\]\)/) as ComciData["subjectNames"],
