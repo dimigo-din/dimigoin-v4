@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsIn, IsInt, IsOptional, Max, Min } from "class-validator";
+import { IsIn, IsInt, IsOptional, IsUUID, Max, Min } from "class-validator";
 import { IsString } from "nestjs-swagger-dto";
 import { GenderValues } from "$mapper/types";
 
@@ -38,6 +38,7 @@ export class GoogleAppLoginDTO {
 export class RefreshTokenDTO {
   @ApiProperty({ required: false })
   @IsString()
+  @IsUUID()
   @IsOptional()
   refreshToken?: string;
 }
