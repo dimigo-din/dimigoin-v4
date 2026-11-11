@@ -171,21 +171,22 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    const hashedToken = createHash("SHA-256").update(refreshToken).digest("hex");
-    const tokens = [hashedToken, refreshToken];
+    const uuid_regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-    let sessionRecord = null;
-
-    for (const token of tokens) {
-      sessionRecord = await this.db.query.session.findFirst({
-        where: { RAW: (t, { eq }) => eq(t.refreshToken, token || "") },
-        with: { user: true },
-      });
-
-      if (sessionRecord) {
-        break;
-      }
+    if (!refreshToken || !uuid_regex.test(refreshToken)) {
+      throw new HttpException(ErrorMsg.UserSession_NotFound(), HttpStatus.NOT_FOUND);
     }
+
+    const hashedToken = createHash("SHA-256").update(refreshToken).digest("hex");
+    const sessionRecord = await this.db.query.session.findFirst({
+      where: { RAW: (t, { eq, or }) => 
+        or(
+          eq(t.refreshToken, hashedToken), 
+          eq(t.refreshToken, refreshToken),
+        )!, 
+      },
+      with: { user: true },
+    });
 
     if (!sessionRecord) {
       throw new HttpException(ErrorMsg.UserSession_NotFound(), HttpStatus.NOT_FOUND);

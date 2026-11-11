@@ -38,7 +38,6 @@ export class GoogleAppLoginDTO {
 export class RefreshTokenDTO {
   @ApiProperty({ required: false })
   @IsString()
-  @IsUUID()
   @IsOptional()
   refreshToken?: string;
 }
