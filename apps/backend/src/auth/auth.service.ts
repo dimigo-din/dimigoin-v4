@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import {
   forwardRef,
   HttpException,
@@ -171,10 +171,12 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
+    const hashedToken = createHash("SHA-256").update(refreshToken).digest("hex");
     const sessionRecord = await this.db.query.session.findFirst({
-      where: { RAW: (t, { eq }) => eq(t.refreshToken, refreshToken || "") },
+      where: { RAW: (t, { eq }) => eq(t.refreshToken, hashedToken || "") },
       with: { user: true },
     });
+
     if (!sessionRecord) {
       throw new HttpException(ErrorMsg.UserSession_NotFound(), HttpStatus.NOT_FOUND);
     }
@@ -233,26 +235,28 @@ export class AuthService {
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const sessionIdentifier = randomUUID();
 
+    const refreshToken = randomUUID();
     const keyPair = {
       accessToken: await this.jwtService.signAsync(
         { sessionIdentifier, ...userRecord },
         { expiresIn: accessExpire || "10m" },
       ),
-      refreshToken: randomUUID(),
+      refreshToken: refreshToken,
     };
 
+    const hashedRefreshToken = createHash("SHA-256").update(refreshToken).digest("hex");
     if (old) {
       await this.db
         .update(session)
         .set({
-          refreshToken: keyPair.refreshToken,
+          refreshToken: hashedRefreshToken,
           sessionIdentifier,
           userId: userRecord.id,
         })
         .where(eq(session.id, old.id));
     } else {
       await this.db.insert(session).values({
-        refreshToken: keyPair.refreshToken,
+        refreshToken: hashedRefreshToken,
         sessionIdentifier,
         userId: userRecord.id,
       });
