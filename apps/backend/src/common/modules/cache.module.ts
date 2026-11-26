@@ -122,7 +122,7 @@ export class CacheService {
     if (8 < currentHour && currentHour < 9) {
       await this.cacheManager.set(cacheKey, data, 1000 * 60 * 5);
     } else {
-      await this.cacheManager.set(cacheKey, data, 1000 * 60 * 60);
+      await this.cacheManager.set(cacheKey, data, 1000 * 60 * 60 * 3);
     }
   }
 

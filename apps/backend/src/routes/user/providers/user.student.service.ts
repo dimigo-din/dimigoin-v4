@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { TZDate } from "@date-fns/tz";
 import { Inject, Injectable } from "@nestjs/common";
 import { format } from "date-fns";
@@ -11,67 +12,89 @@ import type { ComciData } from "~user/dto";
 import { UserManageService } from "./user.manage.service";
 
 const COMCI_BASE = "http://comci.net:4082";
-const SCHOOL_NAME = "한국디"; // 아~ 한국디~
-const SCHOOL_NAME_EUC_KR = "%C7%D1%B1%B9%B5%F0%C1%F6%C5%D0%B9%CC%B5%F0%BE%EE%B0%ED%B5%EE%C7%D0";
-
-const fetchComciJson = async <T>(path: string): Promise<T> => {
-  const text = await (await fetch(`${COMCI_BASE}/${path}`)).text();
-  return JSON.parse(text.replace(/\0/g, "")) as T;
-};
+const SCHOOL_NAME = "한국디지털미디어고"; // 아~ 한국디~
 
 const capture = (source: string, pattern: RegExp) => source.match(pattern)![1]!;
 
-const decodeComciScript = (page: string) =>
-  Array.from(page.matchAll(/\[\[0,"([0-9A-F]+)"\]\],(\d+)\)/g), ([, hex, seed]) => {
-    const encoded = hex ?? "";
-    let decoded = "";
-    for (let i = 0; i < encoded.length; i += 4) {
-      decoded += String.fromCharCode(
-        Number.parseInt(encoded.slice(i, i + 4), 16) ^ ((Number(seed) + (i / 4) * 13) & 255),
-      );
-    }
-    return decoded;
-  }).join("\n");
+const decodeEucKr = (bytes: ArrayBuffer | Uint8Array) => new TextDecoder("euc-kr").decode(bytes);
+
+const decodeComciScript = (source: string): string =>
+  Array.from(
+    source.matchAll(/\(\[\[[01],"(?:[^"\\]|\\.)*"(?:\],\[[01],"(?:[^"\\]|\\.)*")*\]\],\d+\)/g),
+    ([call]) => {
+      const [chunks, seed] = JSON.parse(`[${call.slice(1, -1)}]`) as [[number, string][], number];
+      const code = chunks
+        .map(([plain, text]) =>
+          plain
+            ? text
+            : text.replace(/.{4}/g, (hex, i: number) =>
+                String.fromCharCode(Number.parseInt(hex, 16) ^ ((seed + (i / 4) * 13) & 255)),
+              ),
+        )
+        .join("");
+      return `${code}\n${decodeComciScript(code)}`;
+    },
+  ).join("\n");
 
 const getComciData = async (): Promise<ComciData> => {
-  const page = await (await fetch(`${COMCI_BASE}/st`)).text();
+  const page = decodeEucKr(await (await fetch(`${COMCI_BASE}/st`)).arrayBuffer());
   const script = decodeComciScript(page);
 
-  const searchPath = capture(script, /function school_ra\(sc\)\{\$\.ajax\(\{ url:'\.\/(\d+)\?/);
-  const searchKey = capture(
-    script,
-    /function school_ra\(sc\)\{\$\.ajax\(\{ url:'\.\/\d+\?([^']+)'\+sc/,
-  );
-  const search = await fetchComciJson<{ 학교검색: (string | number)[][] }>(
-    `${searchPath}?${searchKey}${SCHOOL_NAME_EUC_KR}`,
-  );
-  const school = search.학교검색.find((entry) => String(entry[2]).startsWith(SCHOOL_NAME));
-  if (!school) {
-    throw new Error(`Comci school not found: ${SCHOOL_NAME}`);
-  }
-  const schoolCodeDivisor = Number(capture(script, /학교검색\[i\]\[0\]\/(\d+)\)\+2/));
-  const schoolCode = school[Math.floor(Number(school[0]) / schoolCodeDivisor) + 2];
-  if (!schoolCode) {
-    throw new Error(`Comci school code not found: ${SCHOOL_NAME}`);
-  }
+  const keyParts = capture(script, /\[('[0-9a-f]{16}'(?:,'[0-9a-f]{16}'){3})\]/).match(/[0-9a-f]{16}/g)!;
+  const keyOrder = capture(script, /return (a\[\d\](?:\+a\[\d\]){3});/).match(/\d/g)!;
+  const aesKey = Buffer.from(keyOrder.map((i) => keyParts[Number(i)]).join(""), "hex");
+  const xorKey = capture(script, /var a1=String\.fromCharCode\(([\d,]+)\)/).split(",").map(Number);
+  const suffix = capture(script, /btoa\(\w+\+'([^']+)'\)/);
 
-  const requestPrefix = capture(script, /sc_data\('(\d+_)',sc,1,'0'\)/);
-  const timetablePath = capture(script, /var sc3='\.\/(\d+)\?'\+btoa/);
-  const request = Buffer.from(`${requestPrefix}${schoolCode}_0_1`).toString("base64");
-  const raw = await fetchComciJson<Record<string, unknown>>(`${timetablePath}?${request}`);
-  const field = (pattern: RegExp) => raw[`자료${capture(script, pattern)}`];
-  const dailyTimetable = field(/일일자료=Q자료\(자료\.자료(\d+)\[/);
-  if (!Array.isArray(dailyTimetable)) {
-    throw new Error(`Comci returned no timetable for ${SCHOOL_NAME}`);
-  }
+  const decodeString = (value: unknown) =>
+    decodeEucKr(
+      Buffer.from(String(value ?? ""), "base64").map((byte, i) => byte ^ xorKey[i % xorKey.length]!),
+    );
+
+  const request = async <T>(body: string): Promise<T> => {
+    const response = await fetch(`${COMCI_BASE}/${capture(script, /url:'\.\/(\d+)'/)}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain; charset=UTF-8",
+        "X-Hour-Token": capture(page, /__HourRequestToken='(\w+)'/),
+      },
+      body,
+    });
+    const [scheme, iv = "", data = ""] = (await response.text()).replace(/\0+$/, "").split(":");
+    const encoding = scheme === "enc1" ? "hex" : "base64";
+    const decipher = crypto.createDecipheriv("aes-256-cbc", aesKey, Buffer.from(iv, encoding));
+    const json = Buffer.concat([decipher.update(data, encoding), decipher.final()]).toString();
+    return JSON.parse(json.slice(0, json.lastIndexOf("}") + 1)) as T;
+  };
+
+  const searchPrefix = capture(script, /var \w+='([^']+)'\+encodeURIComponent\(sc\)/);
+  const search = await request<{ 학교검색: (string | number)[][] }>(
+    encodeURIComponent(btoa(`${searchPrefix}${encodeURIComponent(SCHOOL_NAME)}${suffix}`)),
+  );
+  const school = search.학교검색.find(
+    (entry) => entry[0] !== 0 && decodeString(entry[2]).startsWith(SCHOOL_NAME),
+  )!;
+  const codeIndex =
+    Math.floor(Number(school[0]) / Number(capture(script, /학교검색\[i\]\[0\]\/(\d+)\)/))) +
+    Number(capture(script, /학교검색\[i\]\[0\]\/\d+\)\+(\d+)/));
+  const schoolCode = decodeString(school[codeIndex]);
+
+  const timetablePrefix = capture(script, /\w+\('(\d+_)',storage\.sc,1,'1'\)/);
+  const raw = await request<Record<string, unknown>>(btoa(`${timetablePrefix}${schoolCode}_0_1${suffix}`));
+  const field = (pattern: RegExp) => raw[capture(script, pattern)];
+  const names = (pattern: RegExp) => (field(pattern) as unknown[]).map(decodeString);
 
   return {
     ...(raw as ComciData),
-    originalTimetable: field(/원자료=Q자료\(자료\.자료(\d+)\[/) as ComciData["originalTimetable"],
-    dailyTimetable: dailyTimetable as ComciData["dailyTimetable"],
-    roomData: field(/var m3=자료\.자료(\d+)\[/) as ComciData["roomData"],
-    teacherNames: field(/성명=Q성명\(자료\.자료(\d+)\[th\]\)/) as ComciData["teacherNames"],
-    subjectNames: field(/과목명=Q과목명\(자료\.자료(\d+)\[sb\]\)/) as ComciData["subjectNames"],
+    originalTimetable: field(
+      /=\w+\(자료\.(\w+)\[학년\]\[반\]\[요일\]\[교시\]\);\w+=\w+\(자료\.\w+\[학년\]/,
+    ) as ComciData["originalTimetable"],
+    dailyTimetable: field(
+      /;\w+=\w+\(자료\.(\w+)\[학년\]\[반\]\[요일\]\[교시\]\);if\(자료\.강의실==1\)/,
+    ) as ComciData["dailyTimetable"],
+    roomData: field(/var m3=자료\.(\w+)\[/) as ComciData["roomData"],
+    teacherNames: names(/성명=\w+\(자료\.(\w+)\[th\]\)/),
+    subjectNames: names(/과목명=\w+\(자료\.(\w+)\[sb\]\)/),
   };
 };
 
